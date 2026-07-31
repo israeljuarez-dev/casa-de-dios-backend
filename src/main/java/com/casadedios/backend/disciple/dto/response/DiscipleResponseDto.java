@@ -1,0 +1,45 @@
+package com.casadedios.backend.disciple.dto.response;
+
+import com.casadedios.backend.disciple.enums.MaritalStatus;
+import com.casadedios.backend.disciple.enums.SpiritualLevel;
+import lombok.Builder;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Builder(toBuilder = true)
+public record DiscipleResponseDto(
+        Long id,
+
+        String firstName,
+
+        String lastName,
+
+        LocalDate birthDate,
+
+        Integer age,
+
+        String occupation,
+
+        String phoneNumber,
+
+        String address,
+
+        String dni,
+
+        MaritalStatus maritalStatus,
+
+        String coupleName,
+
+        SpiritualLevel spiritualLevel,
+
+        boolean isLeader,
+
+        boolean hasChildren,
+
+        List<DiscipleChildResponseDto> children,
+
+        BirthdayAlertDto birthdayAlert,
+
+        DiscipleInviterResponseDto invitedBy
+) {}
