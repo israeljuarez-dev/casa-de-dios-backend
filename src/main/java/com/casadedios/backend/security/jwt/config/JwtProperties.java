@@ -1,0 +1,11 @@
+package com.casadedios.backend.security.jwt.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "security.jwt")
+public record JwtProperties(
+        String privateKey,
+        String userGenerator,
+        Long expirationMinutes
+) {
+}
