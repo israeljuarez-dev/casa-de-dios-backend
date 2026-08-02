@@ -302,4 +302,94 @@ public interface DiscipleControllerDocumentation {
     )
     @Parameter(name = "id", description = "Id del discípulo", example = "1", in = ParameterIn.PATH)
     ResponseEntity<ApiResponseDto<Void>> softDeleteById(@PathVariable @Min(1) Long id);
+
+    @Operation(
+            summary = "Exportar discípulos a Excel",
+            description = "Genera un archivo Excel con los discípulos filtrados según los criterios de búsqueda. " +
+                    "Soporta los mismos filtros que el listado (firstName, lastName, spiritualLevel, maritalStatus, isLeader).",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Archivo Excel generado exitosamente",
+                            content = @Content(
+                                    mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validación fallida en los criterios de búsqueda",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Error al generar el archivo Excel",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ErrorDto.class)
+                            )
+                    )
+            }
+    )
+    @Parameters({
+            @Parameter(
+                    name = "firstName",
+                    description = "Filtro por nombres del discípulo",
+                    example = "Heinz",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "lastName",
+                    description = "Filtro por apellidos del discípulo",
+                    example = "Juárez",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "spiritualLevel",
+                    description = "Filtro por nivel espiritual",
+                    example = "GUEST",
+                    schema = @Schema(implementation = SpiritualLevel.class),
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "maritalStatus",
+                    description = "Filtro por estado civil",
+                    example = "SINGLE",
+                    schema = @Schema(implementation = MaritalStatus.class),
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "isLeader",
+                    description = "Filtro por si el discípulo es líder de célula",
+                    example = "false",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "page",
+                    description = "Número de página (0-indexed)",
+                    example = "0",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "size",
+                    description = "Cantidad de resultados por página",
+                    example = "10",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "sortField",
+                    description = "Campo por el cual ordenar los resultados",
+                    example = "lastName",
+                    in = ParameterIn.QUERY
+            ),
+            @Parameter(
+                    name = "sortDirection",
+                    description = "Dirección de orden: ASC o DESC",
+                    example = "ASC",
+                    in = ParameterIn.QUERY
+            )
+    })
+    ResponseEntity<byte[]> exportToExcel(@ModelAttribute DiscipleSearchCriteriaDto criteria);
 }

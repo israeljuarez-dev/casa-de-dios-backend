@@ -4,8 +4,10 @@ import com.casadedios.backend.common.dto.response.PaginationResponseDto;
 import com.casadedios.backend.disciple.dto.request.DiscipleRegisterRequestDto;
 import com.casadedios.backend.disciple.dto.request.DiscipleSearchCriteriaDto;
 import com.casadedios.backend.disciple.dto.request.DiscipleUpdateRequestDto;
-import com.casadedios.backend.disciple.dto.response.DiscipleChildResponseDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleResponseDto;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public interface DiscipleService {
     PaginationResponseDto<DiscipleResponseDto> findAll(DiscipleSearchCriteriaDto criteria);
@@ -17,4 +19,8 @@ public interface DiscipleService {
     DiscipleResponseDto update(Long id, DiscipleUpdateRequestDto request);
 
     void softDeleteById(Long id);
+
+    ByteArrayOutputStream exportToExcel(DiscipleSearchCriteriaDto criteria) throws IOException;
+
+    String generateExcelFileName();
 }

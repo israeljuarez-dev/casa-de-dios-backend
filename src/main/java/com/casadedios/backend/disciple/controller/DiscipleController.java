@@ -11,12 +11,19 @@ import com.casadedios.backend.disciple.service.DiscipleService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 @RestController
+@Slf4j
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/v1/disciples")
@@ -61,5 +68,26 @@ public class DiscipleController implements DiscipleControllerDocumentation {
     public ResponseEntity<ApiResponseDto<Void>> softDeleteById(@PathVariable @Min(1) Long id) {
         discipleService.softDeleteById(id);
         return ResponseEntity.ok(ApiResponseDto.success(HttpStatus.OK.value(), "Discípulo eliminado exitosamente", null));
+    }
+
+    @GetMapping("/export/excel")
+    @Override
+    public ResponseEntity<byte[]> exportToExcel(@ModelAttribute DiscipleSearchCriteriaDto criteria) {
+        try {
+            ByteArrayOutputStream outputStream = discipleService.exportToExcel(criteria);
+            byte[] excelBytes = outputStream.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", discipleService.generateExcelFileName());
+            headers.setContentLength(excelBytes.length);
+
+            log.info("Reporte de discípulos exportado exitosamente");
+
+            return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
+        } catch (IOException exception) {
+            log.error("Error al exportar reporte de discípulos", exception);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

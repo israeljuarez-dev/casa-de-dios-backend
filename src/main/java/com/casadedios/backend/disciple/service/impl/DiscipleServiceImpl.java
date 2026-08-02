@@ -10,6 +10,7 @@ import com.casadedios.backend.disciple.dto.response.DiscipleResponseDto;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.enums.RelationshipType;
 import com.casadedios.backend.disciple.enums.SpiritualLevel;
+import com.casadedios.backend.disciple.export.DiscipleExcelExporter;
 import com.casadedios.backend.disciple.mapper.DiscipleMapper;
 import com.casadedios.backend.disciple.persistence.model.Disciple;
 import com.casadedios.backend.disciple.persistence.model.DiscipleRelationship;
@@ -17,6 +18,7 @@ import com.casadedios.backend.disciple.persistence.repository.DiscipleRelationsh
 import com.casadedios.backend.disciple.persistence.repository.DiscipleRepository;
 import com.casadedios.backend.disciple.persistence.specification.DiscipleSpecification;
 import com.casadedios.backend.disciple.service.DiscipleService;
+import com.casadedios.backend.disciple.util.DiscipleDateCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -37,6 +42,8 @@ public class DiscipleServiceImpl implements DiscipleService {
     private final DiscipleRelationshipRepository relationshipRepository;
 
     private final DiscipleMapper discipleMapper;
+
+    private final DiscipleDateCalculator discipleDateCalculator;
 
     @Override
     @Transactional(readOnly = true)
@@ -121,6 +128,38 @@ public class DiscipleServiceImpl implements DiscipleService {
         log.warn("Discípulo con id {} marcado como inactivo (soft delete)", id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ByteArrayOutputStream exportToExcel(DiscipleSearchCriteriaDto criteria) throws IOException {
+        long totalRecords = discipleRepository.count(DiscipleSpecification.withSearchCriteria(criteria));
+
+        Pageable pageable = Pageable.ofSize((int) totalRecords);
+
+        Page<Disciple> page = discipleRepository.findAll(
+                DiscipleSpecification.withSearchCriteria(criteria),
+                pageable
+        );
+
+        List<DiscipleResponseDto> disciplesDto = page.getContent().stream()
+                .map(this::toResponseDtoWithRelationships)
+                .toList();
+
+        DiscipleExcelExporter exporter = new DiscipleExcelExporter(disciplesDto);
+        ByteArrayOutputStream outputStream = exporter.export();
+
+        log.info("Reporte de discípulos exportado exitosamente con {} registros", disciplesDto.size());
+
+        return outputStream;
+    }
+
+    @Override
+    public String generateExcelFileName() {
+        return "Reporte_Discipulos_" +
+                LocalDate.now(java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd")) +
+                ".xlsx";
+    }
+
     private Disciple getDiscipleOrThrow(Long id) {
         return discipleRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> {
@@ -186,6 +225,7 @@ public class DiscipleServiceImpl implements DiscipleService {
                     .firstName(childDto.firstName())
                     .lastName(childDto.lastName())
                     .birthDate(childDto.birthDate())
+                    .maritalStatus(MaritalStatus.SINGLE)
                     .build();
 
             Disciple savedChild = discipleRepository.save(childEntity);
@@ -328,6 +368,8 @@ public class DiscipleServiceImpl implements DiscipleService {
             childEntity.setBirthDate(childDto.birthDate());
         }
 
+        ensureChildMaritalStatus(childEntity);
+
         discipleRepository.save(childEntity);
     }
 
@@ -336,6 +378,8 @@ public class DiscipleServiceImpl implements DiscipleService {
                 .firstName(childDto.firstName())
                 .lastName(childDto.lastName())
                 .birthDate(childDto.birthDate())
+                .maritalStatus(MaritalStatus.SINGLE)
+                .spiritualLevel(SpiritualLevel.GUEST)
                 .build();
 
         Disciple savedChild = discipleRepository.save(childEntity);
@@ -347,5 +391,14 @@ public class DiscipleServiceImpl implements DiscipleService {
                 .build();
 
         relationshipRepository.save(relationship);
+    }
+
+    private void ensureChildMaritalStatus(Disciple child) {
+        int age = discipleDateCalculator.calculateAge(child.getBirthDate());
+
+        if (age < 18) {
+            child.setMaritalStatus(MaritalStatus.SINGLE);
+            child.setCoupleName(null);
+        }
     }
 }
