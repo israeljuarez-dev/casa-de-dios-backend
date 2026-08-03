@@ -38,7 +38,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @NullMarked
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        log.info("Buscando usuario por username o email: '{}'", username);
+        log.info("Buscando usuario por username o email");
 
         UserEntity userEntity = userEntityRepository.findByUsernameOrEmail(username, username)
                 .orElseThrow(() -> {

@@ -26,7 +26,7 @@ import java.io.IOException;
 @Slf4j
 @Validated
 @RequiredArgsConstructor
-@RequestMapping("/v1/disciples")
+@RequestMapping("/disciples")
 public class DiscipleController implements DiscipleControllerDocumentation {
 
     private final DiscipleService discipleService;
