@@ -25,11 +25,8 @@ public record DiscipleRegisterRequestDto(
         @Size(max = 150, message = "La ocupación debe tener entre 3 y 150 caracteres")
         String occupation,
 
-        @Size(min = 9, max = 9, message = "El número de teléfono debe tener exactamente 9 números")
-        @Pattern(
-                regexp = "\\d+",
-                message = "El número de teléfono solo puede contener números"
-        )
+        String phoneCodeNumber,
+
         String phoneNumber,
 
         @Size(min=3, max = 255, message = "La dirección debe tener entre 3 y 255 caracteres")

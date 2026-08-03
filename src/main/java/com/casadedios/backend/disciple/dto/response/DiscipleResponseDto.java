@@ -21,6 +21,8 @@ public record DiscipleResponseDto(
 
         String occupation,
 
+        String phoneCodeNumber,
+
         String phoneNumber,
 
         String address,

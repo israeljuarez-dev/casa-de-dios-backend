@@ -40,11 +40,6 @@ public final class DiscipleSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("maritalStatus"), criteria.maritalStatus()));
             }
 
-            // Filtro por si es líder
-            if (criteria.isLeader() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("isLeader"), criteria.isLeader()));
-            }
-
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }

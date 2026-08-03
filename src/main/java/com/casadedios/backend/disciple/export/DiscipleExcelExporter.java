@@ -115,7 +115,7 @@ public class DiscipleExcelExporter  implements ExcelExportService {
         addCell(row, 2, formatBirthDate(disciple.birthDate()), dateStyle);
         addCell(row, 3, disciple.age(), rowStyle);
         addCell(row, 4, disciple.occupation(), rowStyle);
-        addCell(row, 5, disciple.phoneNumber(), rowStyle);
+        addCell(row, 5, formatPhone(disciple.phoneCodeNumber(), disciple.phoneNumber()), rowStyle);
         addCell(row, 6, disciple.address(), rowStyle);
         addCell(row, 7, disciple.dni(), rowStyle);
         addCell(row, 8, disciple.maritalStatus() != null ? disciple.maritalStatus().getDisplayName() : "", rowStyle);
@@ -125,6 +125,12 @@ public class DiscipleExcelExporter  implements ExcelExportService {
 
     private String formatBirthDate(java.time.LocalDate birthDate) {
         return birthDate != null ? birthDate.format(DATE_FORMATTER) : "";
+    }
+
+    private String formatPhone(String phoneCodeNumber, String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) return "";
+        if (phoneCodeNumber == null || phoneCodeNumber.isBlank()) return phoneNumber;
+        return phoneCodeNumber + " " + phoneNumber;
     }
 
     private String formatMaritalStatus(com.casadedios.backend.disciple.enums.MaritalStatus status) {

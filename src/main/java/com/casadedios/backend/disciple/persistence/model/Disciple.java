@@ -38,6 +38,9 @@ public class Disciple {
     @Column(length = 150)
     private String occupation;
 
+    @Column(name = "phone_code_number", length = 10)
+    private String phoneCodeNumber;
+
     @Column(name = "phone_number", unique = true, length = 20)
     private String phoneNumber;
 

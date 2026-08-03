@@ -15,8 +15,6 @@ public record DiscipleSearchCriteriaDto(
 
         MaritalStatus maritalStatus,
 
-        Boolean isLeader,
-
         Integer page,
         Integer size,
         String sortField,

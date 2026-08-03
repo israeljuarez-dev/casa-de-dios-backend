@@ -9,6 +9,7 @@ CREATE TABLE disciples (
                            birth_date          DATE NOT NULL,
                            occupation          VARCHAR(150),
 
+                           phone_code_number       VARCHAR(10),
                            phone_number        VARCHAR(20),
                            address             VARCHAR(255),
                            dni                 VARCHAR(20),
@@ -49,6 +50,7 @@ COMMENT ON COLUMN disciples.first_name IS 'Nombres del discípulo';
 COMMENT ON COLUMN disciples.last_name IS 'Apellidos del discípulo';
 COMMENT ON COLUMN disciples.birth_date IS 'Fecha de nacimiento; a partir de este valor la aplicación calcula la edad actual y los días restantes para el próximo cumpleaños';
 COMMENT ON COLUMN disciples.occupation IS 'Profesión u oficio del discípulo (opcional)';
+COMMENT ON COLUMN disciples.phone_code_number IS 'Código de país o prefijo telefónico del discípulo (ej: +51, +1), usado por el frontend para construir el enlace wa.me';
 COMMENT ON COLUMN disciples.phone_number IS 'Número de celular. Se usa para generar el enlace directo a WhatsApp (wa.me) en el frontend';
 COMMENT ON COLUMN disciples.address IS 'Dirección domiciliaria';
 COMMENT ON COLUMN disciples.dni IS 'Documento de identidad';
