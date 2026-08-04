@@ -58,6 +58,7 @@ public class DiscipleExcelExporter  implements ExcelExportService {
         headerRow.setHeightInPoints(28);
 
         String[] headers = {
+                "N°",
                 "Nombres",
                 "Apellidos",
                 "Fecha Nacimiento",
@@ -90,14 +91,16 @@ public class DiscipleExcelExporter  implements ExcelExportService {
         boolean alternate = false;
 
         for (DiscipleResponseDto disciple : disciples) {
-            Row row = sheet.createRow(rowNum++);
+            Row row = sheet.createRow(rowNum);
             row.setHeightInPoints(22);
 
             CellStyle currentRow = alternate ? rowDark : rowLight;
             CellStyle currentDate = alternate ? dateDark : dateLight;
             CellStyle currentBool = alternate ? boolDark : boolLight;
 
-            fillDiscipleRow(row, disciple, currentRow, currentDate, currentBool);
+            fillDiscipleRow(row, disciple, rowNum, currentRow, currentDate, currentBool);
+
+            rowNum++;
 
             alternate = !alternate;
         }
@@ -106,21 +109,23 @@ public class DiscipleExcelExporter  implements ExcelExportService {
     private void fillDiscipleRow(
             Row row,
             DiscipleResponseDto disciple,
+            int rowNumber,
             CellStyle rowStyle,
             CellStyle dateStyle,
             CellStyle boolStyle
     ) {
-        addCell(row, 0, disciple.firstName(), rowStyle);
-        addCell(row, 1, disciple.lastName(), rowStyle);
-        addCell(row, 2, formatBirthDate(disciple.birthDate()), dateStyle);
-        addCell(row, 3, disciple.age(), rowStyle);
-        addCell(row, 4, disciple.occupation(), rowStyle);
-        addCell(row, 5, formatPhone(disciple.phoneCodeNumber(), disciple.phoneNumber()), rowStyle);
-        addCell(row, 6, disciple.address(), rowStyle);
-        addCell(row, 7, disciple.dni(), rowStyle);
-        addCell(row, 8, disciple.maritalStatus() != null ? disciple.maritalStatus().getDisplayName() : "", rowStyle);
-        addCell(row, 9, disciple.coupleName(), rowStyle);
-        addCell(row, 10, disciple.spiritualLevel() != null ? disciple.spiritualLevel().getDisplayName() : "", rowStyle);
+        addCell(row, 0, rowNumber, rowStyle);
+        addCell(row, 1, disciple.firstName(), rowStyle);
+        addCell(row, 2, disciple.lastName(), rowStyle);
+        addCell(row, 3, formatBirthDate(disciple.birthDate()), dateStyle);
+        addCell(row, 4, disciple.age(), rowStyle);
+        addCell(row, 5, disciple.occupation(), rowStyle);
+        addCell(row, 6, formatPhone(disciple.phoneCodeNumber(), disciple.phoneNumber()), rowStyle);
+        addCell(row, 7, disciple.address(), rowStyle);
+        addCell(row, 8, disciple.dni(), rowStyle);
+        addCell(row, 9, disciple.maritalStatus() != null ? disciple.maritalStatus().getDisplayName() : "", rowStyle);
+        addCell(row, 10, disciple.coupleName(), rowStyle);
+        addCell(row, 11, disciple.spiritualLevel() != null ? disciple.spiritualLevel().getDisplayName() : "", rowStyle);
     }
 
     private String formatBirthDate(java.time.LocalDate birthDate) {
@@ -130,7 +135,9 @@ public class DiscipleExcelExporter  implements ExcelExportService {
     private String formatPhone(String phoneCodeNumber, String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) return "";
         if (phoneCodeNumber == null || phoneCodeNumber.isBlank()) return phoneNumber;
-        return phoneCodeNumber + " " + phoneNumber;
+
+        String prefix = phoneCodeNumber.startsWith("+") ? phoneCodeNumber : "+" + phoneCodeNumber;
+        return prefix + " " + phoneNumber;
     }
 
     private String formatMaritalStatus(com.casadedios.backend.disciple.enums.MaritalStatus status) {
@@ -150,7 +157,7 @@ public class DiscipleExcelExporter  implements ExcelExportService {
     }
 
     private void addCell(Row row, int columnIndex, Object value, CellStyle style) {
-        Cell cell = row.createCell(columnIndex);
+        Cell cell = row.createCell(columnIndex, CellType.STRING);
         if (value instanceof Number number) {
             cell.setCellValue(number.doubleValue());
         } else {

@@ -279,27 +279,7 @@ public class DiscipleServiceImpl implements DiscipleService {
                 })
                 .orElse(null);
 
-        DiscipleResponseDto base = discipleMapper.toResponseDto(entity);
-
-        return DiscipleResponseDto.builder()
-                .id(base.id())
-                .firstName(base.firstName())
-                .lastName(base.lastName())
-                .birthDate(base.birthDate())
-                .age(base.age())
-                .occupation(base.occupation())
-                .phoneNumber(base.phoneNumber())
-                .address(base.address())
-                .dni(base.dni())
-                .maritalStatus(base.maritalStatus())
-                .coupleName(base.coupleName())
-                .spiritualLevel(base.spiritualLevel())
-                .isLeader(base.isLeader())
-                .hasChildren(!children.isEmpty())
-                .children(children)
-                .birthdayAlert(base.birthdayAlert())
-                .invitedBy(inviter)
-                .build();
+        return discipleMapper.toResponseDto(entity, children, inviter);
     }
 
     private void validateUniqueDniOnUpdate(String dni, Long currentId) {
