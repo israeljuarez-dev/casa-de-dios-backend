@@ -30,7 +30,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -52,9 +54,7 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         Page<Disciple> page = discipleRepository.findAll(DiscipleSpecification.withSearchCriteria(criteria), pageable);
 
-        List<DiscipleResponseDto> content = page.getContent().stream()
-                .map(this::toResponseDtoWithRelationships)
-                .toList();
+        List<DiscipleResponseDto> content = mapPageWithRelationships(page.getContent());
 
         return PaginationResponseDto.of(content, page);
     }
@@ -140,9 +140,7 @@ public class DiscipleServiceImpl implements DiscipleService {
                 pageable
         );
 
-        List<DiscipleResponseDto> disciplesDto = page.getContent().stream()
-                .map(this::toResponseDtoWithRelationships)
-                .toList();
+        List<DiscipleResponseDto> disciplesDto = mapPageWithRelationships(page.getContent());
 
         DiscipleExcelExporter exporter = new DiscipleExcelExporter(disciplesDto);
         ByteArrayOutputStream outputStream = exporter.export();
@@ -154,10 +152,53 @@ public class DiscipleServiceImpl implements DiscipleService {
 
     @Override
     public String generateExcelFileName() {
-        return "Reporte_Discipulos_" +
-                LocalDate.now(java.time.ZoneId.systemDefault())
-                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd")) +
-                ".xlsx";
+        return "Reporte_Discipulos_"
+                + LocalDate.now(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+                + ".xlsx";
+    }
+
+    private List<DiscipleResponseDto> mapPageWithRelationships(List<Disciple> disciples) {
+        if (disciples.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> discipleIds = disciples.stream()
+                .map(Disciple::getId)
+                .toList();
+
+        Map<Long, List<DiscipleChildResponseDto>> childrenByParentId = fetchChildrenMap(discipleIds);
+        Map<Long, DiscipleInviterResponseDto> inviterByDiscipleId = fetchInvitersMap(discipleIds);
+
+        return disciples.stream()
+                .map(disciple -> discipleMapper.toResponseDto(
+                        disciple,
+                        childrenByParentId.getOrDefault(disciple.getId(), List.of()),
+                        inviterByDiscipleId.get(disciple.getId())
+                ))
+                .toList();
+    }
+
+    private Map<Long, List<DiscipleChildResponseDto>> fetchChildrenMap(List<Long> discipleIds) {
+        return relationshipRepository.findChildrenBySourceIdsAndType(discipleIds, RelationshipType.PARENT_CHILD).stream()
+                .collect(Collectors.groupingBy(
+                        rel -> rel.getSourceDisciple().getId(),
+                        Collectors.mapping(
+                                rel -> discipleMapper.toChildResponseDto(rel.getTargetDisciple()),
+                                Collectors.toList()
+                        )
+                ));
+    }
+
+    private Map<Long, DiscipleInviterResponseDto> fetchInvitersMap(List<Long> discipleIds) {
+        return relationshipRepository.findInvitersByTargetIdsAndType(discipleIds, RelationshipType.INVITED_BY).stream()
+                .collect(Collectors.toMap(
+                        rel -> rel.getTargetDisciple().getId(),
+                        rel -> {
+                            Disciple source = rel.getSourceDisciple();
+                            return new DiscipleInviterResponseDto(
+                                    source.getId(), source.getFirstName(), source.getLastName());
+                        }
+                ));
     }
 
     private Disciple getDiscipleOrThrow(Long id) {
