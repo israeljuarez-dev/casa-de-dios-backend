@@ -1,16 +1,20 @@
 package com.casadedios.backend.auth.persistence.model;
 
+import com.casadedios.backend.auth.enums.GenderEnum;
 import com.casadedios.backend.auth.enums.RoleEnum;
 import com.casadedios.backend.common.listener.EntityAuditListener;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Getter
 @Setter
-@EqualsAndHashCode
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @ToString
 @NoArgsConstructor
@@ -21,6 +25,7 @@ public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(unique = true, length = 50, nullable = false)
@@ -31,6 +36,16 @@ public class UserEntity {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Column(name = "first_name", length = 150, nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", length = 150, nullable = false)
+    private String lastName;
+
+    @Column(name = "gender", length = 10, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private GenderEnum gender;
 
     @Column(nullable = false)
     @Builder.Default

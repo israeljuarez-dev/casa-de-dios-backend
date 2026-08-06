@@ -1,13 +1,22 @@
 package com.casadedios.backend.auth.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.casadedios.backend.auth.enums.GenderEnum;
+import jakarta.validation.constraints.*;
 import lombok.Builder;
 
 @Builder
 public record AuthUserRegisterRequestDto(
+        @NotBlank(message = "El nombre no puede estar vacío")
+        @Size(max = 150, message = "El nombre no puede superar los 150 caracteres")
+        String firstName,
+
+        @NotBlank(message = "El apellido no puede estar vacío")
+        @Size(max = 150, message = "El apellido no puede superar los 150 caracteres")
+        String lastName,
+
+        @NotNull(message = "El género es requerido")
+        GenderEnum gender,
+
         @NotBlank(message = "El nombre de usuario es obligatorio")
         @Size(min = 3, max = 50, message = "El nombre de usuario debe tener entre 3 y 50 caracteres")
         String username,

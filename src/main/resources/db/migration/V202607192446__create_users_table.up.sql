@@ -6,6 +6,9 @@ CREATE TABLE users (
                        username                 VARCHAR(50)  NOT NULL,
                        email                    VARCHAR(150) NOT NULL,
                        password_hash            VARCHAR(255) NOT NULL,
+                       first_name               VARCHAR(150) NOT NULL,
+                       last_name                VARCHAR(150) NOT NULL,
+                       gender                   VARCHAR(10)  NOT NULL,
                        role                     VARCHAR(20)  NOT NULL DEFAULT 'PASTOR',
                        enabled                  BOOLEAN NOT NULL DEFAULT TRUE,
                        account_non_expired      BOOLEAN NOT NULL DEFAULT TRUE,
@@ -18,7 +21,8 @@ CREATE TABLE users (
                        CONSTRAINT pk_users PRIMARY KEY (id),
                        CONSTRAINT uq_users_username UNIQUE (username),
                        CONSTRAINT uq_users_email UNIQUE (email),
-                       CONSTRAINT chk_users_role CHECK (role IN ('PASTOR'))
+                       CONSTRAINT chk_users_role CHECK (role IN ('PASTOR')),
+                       CONSTRAINT chk_users_gender CHECK (gender IN ('MALE', 'FEMALE'))
 );
 
 -- ============================================================================
@@ -29,6 +33,9 @@ COMMENT ON COLUMN users.id IS 'Identificador único autogenerado de la cuenta de
 COMMENT ON COLUMN users.username IS 'Nombre de usuario único para iniciar sesión, alternativo al email';
 COMMENT ON COLUMN users.email IS 'Correo electrónico único, usado para iniciar sesión y recuperación de contraseña';
 COMMENT ON COLUMN users.password_hash IS 'Hash BCrypt de la contraseña';
+COMMENT ON COLUMN users.first_name IS 'Nombre del pastor o pastora';
+COMMENT ON COLUMN users.last_name IS 'Apellido del pastor o pastora';
+COMMENT ON COLUMN users.gender IS 'Género del pastor o pastora: MALE o FEMALE';
 COMMENT ON COLUMN users.role IS 'Rol del usuario. Único valor posible actualmente: PASTOR';
 COMMENT ON COLUMN users.enabled IS 'Indica si la cuenta está habilitada para iniciar sesión (Spring Security UserDetails.isEnabled)';
 COMMENT ON COLUMN users.account_non_expired IS 'Indica si la cuenta no ha expirado (Spring Security UserDetails.isAccountNonExpired)';

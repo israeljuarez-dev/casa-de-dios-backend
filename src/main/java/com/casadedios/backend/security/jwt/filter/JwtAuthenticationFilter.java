@@ -41,6 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            log.info("Token recibido, procesando...");
             String jwtToken = authHeader.substring(BEARER_PREFIX.length());
 
             try {
