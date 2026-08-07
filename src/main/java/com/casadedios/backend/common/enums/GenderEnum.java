@@ -1,4 +1,4 @@
-package com.casadedios.backend.auth.enums;
+package com.casadedios.backend.common.enums;
 
 public enum GenderEnum {
     MALE("Masculino"),

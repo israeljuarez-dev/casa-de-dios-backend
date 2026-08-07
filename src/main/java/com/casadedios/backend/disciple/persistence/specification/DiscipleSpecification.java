@@ -30,6 +30,10 @@ public final class DiscipleSpecification {
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("lastName")), pattern));
             }
 
+            if (criteria.gender() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("gender"), criteria.gender()));
+            }
+
             // Filtro por nivel espiritual
             if (criteria.spiritualLevel() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("spiritualLevel"), criteria.spiritualLevel()));

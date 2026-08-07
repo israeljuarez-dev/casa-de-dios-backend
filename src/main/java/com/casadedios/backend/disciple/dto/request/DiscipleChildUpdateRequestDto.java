@@ -1,5 +1,7 @@
 package com.casadedios.backend.disciple.dto.request;
 
+import com.casadedios.backend.common.enums.GenderEnum;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -15,6 +17,8 @@ public record DiscipleChildUpdateRequestDto(
 
         @Size(min=3, max = 150, message = "Los apellidos del hijo deben tener entre 3 y 15 150 caracteres")
         String lastName,
+
+        GenderEnum gender,
 
         @Past(message = "La fecha de nacimiento debe ser en tiempo pasado")
         LocalDate birthDate

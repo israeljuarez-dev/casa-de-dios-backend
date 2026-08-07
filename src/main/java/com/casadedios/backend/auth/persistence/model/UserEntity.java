@@ -1,15 +1,12 @@
 package com.casadedios.backend.auth.persistence.model;
 
-import com.casadedios.backend.auth.enums.GenderEnum;
+import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.auth.enums.RoleEnum;
 import com.casadedios.backend.common.listener.EntityAuditListener;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
-import java.util.List;
 
 @Entity
 @Getter

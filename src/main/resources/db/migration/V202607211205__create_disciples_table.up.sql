@@ -6,10 +6,11 @@ CREATE TABLE disciples (
 
                            first_name          VARCHAR(150) NOT NULL,
                            last_name           VARCHAR(150) NOT NULL,
+                           gender              VARCHAR(10)  NOT NULL,
                            birth_date          DATE NOT NULL,
                            occupation          VARCHAR(150),
 
-                           phone_code_number       VARCHAR(10),
+                           phone_code_number   VARCHAR(10),
                            phone_number        VARCHAR(20),
                            address             VARCHAR(255),
                            dni                 VARCHAR(20),
@@ -25,6 +26,7 @@ CREATE TABLE disciples (
                            updated_at          TIMESTAMP NOT NULL DEFAULT now(),
 
                            CONSTRAINT pk_disciples PRIMARY KEY (id),
+                           CONSTRAINT chk_disciples_gender CHECK (gender IN ('MALE', 'FEMALE')),
                            CONSTRAINT uq_disciples_dni UNIQUE (dni),
                            CONSTRAINT uq_disciples_phone_number UNIQUE (phone_number),
                            CONSTRAINT chk_disciples_marital_status CHECK (marital_status IN
@@ -38,16 +40,17 @@ CREATE TABLE disciples (
 );
 
 CREATE INDEX idx_disciples_last_first_name ON disciples (last_name, first_name);
+CREATE INDEX idx_disciples_gender ON disciples (gender);
 CREATE INDEX idx_disciples_spiritual_level ON disciples (spiritual_level);
 CREATE INDEX idx_disciples_marital_status ON disciples (marital_status);
 CREATE INDEX idx_disciples_birth_date ON disciples (birth_date);
 CREATE INDEX idx_disciples_active ON disciples (active);
-CREATE INDEX idx_disciples_active_true ON disciples (active) WHERE active = TRUE;
 
 COMMENT ON TABLE disciples IS 'Entidad central del sistema: toda persona que asiste a la iglesia';
 COMMENT ON COLUMN disciples.id IS 'Identificador único autogenerado del discípulo';
 COMMENT ON COLUMN disciples.first_name IS 'Nombres del discípulo';
 COMMENT ON COLUMN disciples.last_name IS 'Apellidos del discípulo';
+COMMENT ON COLUMN disciples.gender IS 'Género del discípulo: MALE (masculino) o FEMALE (femenino)';
 COMMENT ON COLUMN disciples.birth_date IS 'Fecha de nacimiento; a partir de este valor la aplicación calcula la edad actual y los días restantes para el próximo cumpleaños';
 COMMENT ON COLUMN disciples.occupation IS 'Profesión u oficio del discípulo (opcional)';
 COMMENT ON COLUMN disciples.phone_code_number IS 'Código de país o prefijo telefónico del discípulo (ej: +51, +1), usado por el frontend para construir el enlace wa.me';
@@ -61,6 +64,8 @@ COMMENT ON COLUMN disciples.is_leader IS 'Indica si el discípulo completó el n
 COMMENT ON COLUMN disciples.active IS 'Indica si el discípulo está activo; FALSE = borrado lógico (soft delete), no visible en consultas normales';
 COMMENT ON COLUMN disciples.created_at IS 'Fecha y hora de creación del registro';
 COMMENT ON COLUMN disciples.updated_at IS 'Fecha y hora de la última modificación del registro';
+
+
 
 -- ============================================================================
 -- disciple_relationships

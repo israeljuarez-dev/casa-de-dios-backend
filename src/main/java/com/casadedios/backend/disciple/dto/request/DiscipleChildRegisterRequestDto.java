@@ -1,5 +1,6 @@
 package com.casadedios.backend.disciple.dto.request;
 
+import com.casadedios.backend.common.enums.GenderEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
@@ -17,6 +18,9 @@ public record DiscipleChildRegisterRequestDto(
         @NotBlank(message = "Los apellidos del hijo son obligatorios")
         @Size(max = 150, message = "Los apellidos del hijo no pueden superar los 150 caracteres")
         String lastName,
+
+        @NotNull(message = "El género del hijo es requerido")
+        GenderEnum gender,
 
         @NotNull(message = "La fecha de nacimiento es obligatoria")
         @Past(message = "La fecha de nacimiento debe ser en tiempo pasado")

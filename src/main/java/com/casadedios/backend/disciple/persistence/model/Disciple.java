@@ -1,5 +1,6 @@
 package com.casadedios.backend.disciple.persistence.model;
 
+import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.common.listener.EntityAuditListener;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.enums.SpiritualLevel;
@@ -31,6 +32,10 @@ public class Disciple {
 
     @Column(name = "last_name", length = 150, nullable = false)
     private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", nullable = false, length = 10)
+    private GenderEnum gender;
 
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;

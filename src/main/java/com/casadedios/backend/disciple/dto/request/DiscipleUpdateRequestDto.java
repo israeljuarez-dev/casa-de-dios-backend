@@ -1,5 +1,6 @@
 package com.casadedios.backend.disciple.dto.request;
 
+import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.enums.SpiritualLevel;
 import com.casadedios.backend.disciple.validation.phonenumber.PhoneValidatable;
@@ -21,6 +22,8 @@ public record DiscipleUpdateRequestDto(
 
         @Size(min = 3, max = 150, message = "Los apellidos deben tener entre 3 y 150 caracteres")
         String lastName,
+
+        GenderEnum gender,
 
         @Past(message = "La fecha de nacimiento debe ser en el pasado")
         LocalDate birthDate,

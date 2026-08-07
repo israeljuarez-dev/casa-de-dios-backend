@@ -1,5 +1,6 @@
 package com.casadedios.backend.disciple.dto.response;
 
+import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.enums.SpiritualLevel;
 import lombok.Builder;
@@ -14,6 +15,8 @@ public record DiscipleResponseDto(
         String firstName,
 
         String lastName,
+
+        GenderEnum gender,
 
         LocalDate birthDate,
 

@@ -265,6 +265,7 @@ public class DiscipleServiceImpl implements DiscipleService {
             Disciple childEntity = Disciple.builder()
                     .firstName(childDto.firstName())
                     .lastName(childDto.lastName())
+                    .gender(childDto.gender())
                     .birthDate(childDto.birthDate())
                     .maritalStatus(MaritalStatus.SINGLE)
                     .build();
@@ -385,6 +386,10 @@ public class DiscipleServiceImpl implements DiscipleService {
             childEntity.setLastName(childDto.lastName());
         }
 
+        if (childDto.gender() != null) {           // AÑADIDO: actualizar género si viene en el request
+            childEntity.setGender(childDto.gender());
+        }
+
         if (childDto.birthDate() != null) {
             childEntity.setBirthDate(childDto.birthDate());
         }
@@ -398,6 +403,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         Disciple childEntity = Disciple.builder()
                 .firstName(childDto.firstName())
                 .lastName(childDto.lastName())
+                .gender(childDto.gender())
                 .birthDate(childDto.birthDate())
                 .maritalStatus(MaritalStatus.SINGLE)
                 .spiritualLevel(SpiritualLevel.GUEST)

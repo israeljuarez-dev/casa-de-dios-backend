@@ -1,6 +1,6 @@
 package com.casadedios.backend.auth.dto.request;
 
-import com.casadedios.backend.auth.enums.GenderEnum;
+import com.casadedios.backend.common.enums.GenderEnum;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
