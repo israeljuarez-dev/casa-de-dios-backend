@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 @RestControllerAdvice
 @Slf4j
@@ -34,7 +35,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status,
             @NonNull WebRequest request
     ) {
-        List<String> reasons = exception.getBindingResult().getFieldErrors().stream()
+        // Field errors: errores sobre campos individuales (@NotBlank, @Size, etc.)
+        List<String> fieldReasons = exception.getBindingResult().getFieldErrors().stream()
                 .map(fieldError ->
                         "%s - %s".formatted(
                                 fieldError.getField(),
@@ -42,6 +44,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         )
                 )
                 .toList();
+
+        // Global errors: errores de anotaciones a nivel de clase (@ValidPhone, etc.)
+        List<String> globalReasons = exception.getBindingResult().getGlobalErrors().stream()
+                .map(globalError ->
+                        Objects.requireNonNullElse(globalError.getDefaultMessage(), "Sin descripción")
+                )
+                .toList();
+
+        List<String> reasons = Stream.concat(fieldReasons.stream(), globalReasons.stream()).toList();
 
         log.warn("Errores de validación en el request: {}", reasons);
 
