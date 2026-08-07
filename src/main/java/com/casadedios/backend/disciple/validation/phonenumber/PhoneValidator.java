@@ -21,6 +21,7 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
         if (dto.getPhoneNumber() == null || dto.getPhoneCodeNumber() == null) {
             return buildMessage(
                     context,
+                    "phoneNumber",
                     "Si se registra un número de celular, el código de país también es obligatorio, y viceversa"
             );
         }
@@ -32,6 +33,7 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
         if (!phoneNumber.matches(ONLY_DIGITS_REGEX)) {
             return buildMessage(
                     context,
+                    "phoneNumber",
                     "El número de celular debe contener solo dígitos, sin espacios, guiones ni el símbolo +"
             );
         }
@@ -47,7 +49,8 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
         }
         return buildMessage(
                 context,
-                "Formato de número inválido para el código de país +" + rule.getCountryCode()
+                "phoneNumber",
+                "Formato inválido para el código +" + rule.getCountryCode()
                         + ". Formato esperado: " + rule.getExpectedFormat()
         );
     }
@@ -59,16 +62,18 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
         }
         return buildMessage(
                 context,
+                "phoneNumber",
                 "El número de celular debe tener entre " + GENERIC_MIN_LENGTH
-                        + " y " + GENERIC_MAX_LENGTH + " dígitos para el código de país indicado"
+                        + " y " + GENERIC_MAX_LENGTH + " dígitos"
         );
     }
 
     // Reemplaza el mensaje por defecto de la anotación con uno dinámico y
     // deshabilita el mensaje default para evitar duplicados en la respuesta
-    private boolean buildMessage(ConstraintValidatorContext context, String message) {
+    private boolean buildMessage(ConstraintValidatorContext context, String field, String message) {
         context.disableDefaultConstraintViolation();
         context.buildConstraintViolationWithTemplate(message)
+                .addPropertyNode(field)   // <-- asocia al campo phoneNumber
                 .addConstraintViolation();
         return false;
     }

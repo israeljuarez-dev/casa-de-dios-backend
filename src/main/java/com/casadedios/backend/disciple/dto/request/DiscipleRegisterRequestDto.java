@@ -37,7 +37,7 @@ public record DiscipleRegisterRequestDto(
 
         String phoneNumber,
 
-        @Size(min=3, max = 255, message = "La dirección debe tener entre 3 y 255 caracteres")
+        @Size(max = 255, message = "La dirección debe tener entre 3 y 255 caracteres")
         String address,
 
         @Size(max = 20, message = "El DNI no puede superar los 20 caracteres")
