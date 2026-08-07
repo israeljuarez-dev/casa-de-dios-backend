@@ -29,7 +29,7 @@ public record DiscipleRegisterRequestDto(
         @Past(message = "La fecha de nacimiento debe ser en el pasado")
         LocalDate birthDate,
 
-        @Size(max = 150, message = "La ocupación debe tener entre 3 y 150 caracteres")
+        @Size(max = 150, message = "La ocupación debe tener menos 150 caracteres")
         String occupation,
 
         @Size(max = 10)
@@ -37,7 +37,7 @@ public record DiscipleRegisterRequestDto(
 
         String phoneNumber,
 
-        @Size(max = 255, message = "La dirección debe tener entre 3 y 255 caracteres")
+        @Size(max = 255, message = "La dirección debe tener menos de 150 caracteres")
         String address,
 
         @Size(max = 20, message = "El DNI no puede superar los 20 caracteres")
