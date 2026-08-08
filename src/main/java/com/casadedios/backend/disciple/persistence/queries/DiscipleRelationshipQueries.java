@@ -12,10 +12,40 @@ public final class DiscipleRelationshipQueries {
             AND dr.relationshipType = :type
             """;
 
+    // Solo trae los campos del hijo (target), y el id del padre (source)
+    public static final String FIND_CHILDREN_BY_SOURCE_IDS =
+            """
+            SELECT
+                dr.source_disciple_id  AS parentId,
+                d.id                   AS childId,
+                d.first_name           AS firstName,
+                d.last_name            AS lastName,
+                d.gender               AS gender,
+                d.birth_date           AS birthDate
+            FROM disciple_relationships dr
+            JOIN disciples d ON d.id = dr.target_disciple_id
+            WHERE dr.source_disciple_id IN :sourceIds
+              AND dr.relationship_type = :type
+            """;
+
     public static final String FIND_INVITERS_BY_TARGET_IDS_AND_TYPE = """
             SELECT dr FROM DiscipleRelationship dr
             JOIN FETCH dr.sourceDisciple
             WHERE dr.targetDisciple.id IN :targetIds
             AND dr.relationshipType = :type
+            """;
+
+    // Solo trae los campos del invitador (source), y el id del invitado (target)
+    public static final String FIND_INVITERS_BY_TARGET_IDS =
+            """
+            SELECT
+                dr.target_disciple_id  AS discipleId,
+                d.id                   AS inviterId,
+                d.first_name           AS firstName,
+                d.last_name            AS lastName
+            FROM disciple_relationships dr
+            JOIN disciples d ON d.id = dr.source_disciple_id
+            WHERE dr.target_disciple_id IN :targetIds
+              AND dr.relationship_type = :type
             """;
 }
