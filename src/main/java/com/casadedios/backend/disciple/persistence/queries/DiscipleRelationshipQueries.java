@@ -33,4 +33,28 @@ public final class DiscipleRelationshipQueries {
             WHERE dr.target_disciple_id IN :targetIds
               AND dr.relationship_type = :type
             """;
+
+    public static final String FIND_PARENTS_BY_CHILD_IDS =
+            """
+            SELECT
+                dr.target_disciple_id  AS childId,
+                d.id                   AS parentId,
+                d.first_name           AS firstName,
+                d.last_name            AS lastName,
+                d.gender               AS gender
+            FROM disciple_relationships dr
+            JOIN disciples d ON d.id = dr.source_disciple_id
+            WHERE dr.target_disciple_id IN :childIds
+              AND dr.relationship_type = :type
+            """;
+
+    public static final String FIND_CHILD_IDS_BY_PARENT_ID =
+            """
+            SELECT
+                dr.id               AS relationshipId,
+                dr.target_disciple_id AS childId
+            FROM disciple_relationships dr
+            WHERE dr.source_disciple_id = :parentId
+              AND dr.relationship_type = :type
+            """;
 }

@@ -34,7 +34,7 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
             return buildMessage(
                     context,
                     "phoneNumber",
-                    "El número de celular debe contener solo dígitos, sin espacios, guiones ni el símbolo +"
+                    "El número de celular debe contener solo dígitos, sin guiones ni el símbolo +"
             );
         }
 

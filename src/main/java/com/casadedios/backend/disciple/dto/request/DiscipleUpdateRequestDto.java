@@ -17,10 +17,10 @@ import java.util.List;
 @Builder
 @ValidPhone
 public record DiscipleUpdateRequestDto(
-        @Size(min = 3, max = 150, message = "Los nombres deben tener entre 3 y 150 caracteres")
+        @Size(max = 150, message = "Los nombres no deben superar los 150 caracteres")
         String firstName,
 
-        @Size(min = 3, max = 150, message = "Los apellidos deben tener entre 3 y 150 caracteres")
+        @Size(max = 150, message = "Los apellidos no deben superar los 150 caracteres")
         String lastName,
 
         GenderEnum gender,
@@ -36,7 +36,7 @@ public record DiscipleUpdateRequestDto(
 
         String phoneNumber,
 
-        @Size(min = 3, max = 255, message = "La dirección debe tener entre 3 y 255 caracteres")
+        @Size(max = 255, message = "La dirección no debe superar los 255 caracteres")
         String address,
 
         @Size(max = 20, message = "El DNI no puede superar los 20 caracteres")
@@ -44,7 +44,7 @@ public record DiscipleUpdateRequestDto(
 
         MaritalStatus maritalStatus,
 
-        @Size(min = 3, max = 150, message = "El nombre del cónyuge debe tener entre 3 y 150 caracteres")
+        @Size(max = 150, message = "El nombre del cónyuge no debe superar los 150 caracteres")
         String coupleName,
 
         SpiritualLevel spiritualLevel,

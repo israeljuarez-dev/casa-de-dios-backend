@@ -7,6 +7,7 @@ import com.casadedios.backend.common.exception.model.CasaDeDiosException;
 import com.casadedios.backend.disciple.dto.request.*;
 import com.casadedios.backend.disciple.dto.response.DiscipleChildResponseDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleInviterResponseDto;
+import com.casadedios.backend.disciple.dto.response.DiscipleParentResponseDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleResponseDto;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.enums.RelationshipType;
@@ -16,7 +17,9 @@ import com.casadedios.backend.disciple.mapper.DiscipleMapper;
 import com.casadedios.backend.disciple.persistence.model.Disciple;
 import com.casadedios.backend.disciple.persistence.model.DiscipleRelationship;
 import com.casadedios.backend.disciple.persistence.projection.ChildProjection;
+import com.casadedios.backend.disciple.persistence.projection.ChildRelationshipProjection;
 import com.casadedios.backend.disciple.persistence.projection.InviterProjection;
+import com.casadedios.backend.disciple.persistence.projection.ParentProjection;
 import com.casadedios.backend.disciple.persistence.repository.DiscipleRelationshipRepository;
 import com.casadedios.backend.disciple.persistence.repository.DiscipleRepository;
 import com.casadedios.backend.disciple.persistence.specification.DiscipleSpecification;
@@ -120,15 +123,12 @@ public class DiscipleServiceImpl implements DiscipleService {
     @Override
     @Transactional
     public void softDeleteById(Long id) {
-        Disciple disciple = discipleRepository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> {
-                    log.debug("No existe un discípulo activo con id {}, no se puede eliminar", id);
-                    return new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
-                });
+        if (!discipleRepository.existsById(id)) {
+            log.debug("No existe un discípulo activo con id {}, no se puede eliminar", id);
+            throw new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
+        }
 
-        disciple.setActive(false);
-
-        discipleRepository.save(disciple);
+        discipleRepository.softDeleteById(id);
 
         log.warn("Discípulo con id {} marcado como inactivo (soft delete)", id);
     }
@@ -136,16 +136,12 @@ public class DiscipleServiceImpl implements DiscipleService {
     @Override
     @Transactional(readOnly = true)
     public ByteArrayOutputStream exportToExcel(DiscipleSearchCriteriaDto criteria) throws IOException {
-        long totalRecords = discipleRepository.count(DiscipleSpecification.withSearchCriteria(criteria));
-
-        Pageable pageable = Pageable.ofSize((int) totalRecords);
-
-        Page<Disciple> page = discipleRepository.findAll(
+        List<Disciple> disciples = discipleRepository.findAll(
                 DiscipleSpecification.withSearchCriteria(criteria),
-                pageable
-        );
+                Pageable.unpaged()  // trae todos sin paginación, sin query de count extra
+        ).getContent();
 
-        List<DiscipleResponseDto> disciplesDto = mapPageWithRelationships(page.getContent());
+        List<DiscipleResponseDto> disciplesDto = mapPageWithRelationships(disciples);
 
         DiscipleExcelExporter exporter = new DiscipleExcelExporter(disciplesDto);
         ByteArrayOutputStream outputStream = exporter.export();
@@ -173,12 +169,14 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         Map<Long, List<DiscipleChildResponseDto>> childrenByParentId = fetchChildrenMap(discipleIds);
         Map<Long, DiscipleInviterResponseDto> inviterByDiscipleId = fetchInvitersMap(discipleIds);
+        Map<Long, List<DiscipleParentResponseDto>> parentsByChildId = fetchParentsMap(discipleIds);
 
         return disciples.stream()
                 .map(disciple -> discipleMapper.toResponseDto(
                         disciple,
                         childrenByParentId.getOrDefault(disciple.getId(), List.of()),
-                        inviterByDiscipleId.get(disciple.getId())
+                        inviterByDiscipleId.get(disciple.getId()),
+                        parentsByChildId.getOrDefault(disciple.getId(), List.of()) // AÑADIDO
                 ))
                 .toList();
     }
@@ -195,6 +193,24 @@ public class DiscipleServiceImpl implements DiscipleService {
                                         GenderEnum.valueOf(proj.getGender()),
                                         proj.getBirthDate(),
                                         discipleDateCalculator.calculateAge(proj.getBirthDate())
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+    }
+
+    private Map<Long, List<DiscipleParentResponseDto>> fetchParentsMap(List<Long> discipleIds) {
+        return discipleRelationshipRepository
+                .findParentsByChildIds(discipleIds, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        ParentProjection::getChildId,
+                        Collectors.mapping(
+                                proj -> new DiscipleParentResponseDto(
+                                        proj.getParentId(),
+                                        proj.getFirstName(),
+                                        proj.getLastName(),
+                                        GenderEnum.valueOf(proj.getGender())
                                 ),
                                 Collectors.toList()
                         )
@@ -325,22 +341,44 @@ public class DiscipleServiceImpl implements DiscipleService {
     }
 
     private DiscipleResponseDto toResponseDtoWithRelationships(Disciple entity) {
+        List<Long> id = List.of(entity.getId());
+
         List<DiscipleChildResponseDto> children = discipleRelationshipRepository
-                .findBySourceDisciple_IdAndRelationshipType(entity.getId(), RelationshipType.PARENT_CHILD)
+                .findChildrenBySourceIds(id, RelationshipType.PARENT_CHILD.name())
                 .stream()
-                .map(relationship -> discipleMapper.toChildResponseDto(relationship.getTargetDisciple()))
+                .map(proj -> new DiscipleChildResponseDto(
+                        proj.getChildId(),
+                        proj.getFirstName(),
+                        proj.getLastName(),
+                        GenderEnum.valueOf(proj.getGender()),
+                        proj.getBirthDate(),
+                        discipleDateCalculator.calculateAge(proj.getBirthDate())
+                ))
                 .toList();
 
         DiscipleInviterResponseDto inviter = discipleRelationshipRepository
-                .findByTargetDisciple_IdAndRelationshipType(entity.getId(), RelationshipType.INVITED_BY)
-                .map(relationship -> {
-                    Disciple sourceDisciple = relationship.getSourceDisciple();
-                    return new DiscipleInviterResponseDto(
-                            sourceDisciple.getId(), sourceDisciple.getFirstName(), sourceDisciple.getLastName());
-                })
+                .findInvitersByTargetIds(id, RelationshipType.INVITED_BY.name())
+                .stream()
+                .findFirst()
+                .map(proj -> new DiscipleInviterResponseDto(
+                        proj.getInviterId(),
+                        proj.getFirstName(),
+                        proj.getLastName()
+                ))
                 .orElse(null);
 
-        return discipleMapper.toResponseDto(entity, children, inviter);
+        List<DiscipleParentResponseDto> parents = discipleRelationshipRepository
+                .findParentsByChildIds(id, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .map(proj -> new DiscipleParentResponseDto(
+                        proj.getParentId(),
+                        proj.getFirstName(),
+                        proj.getLastName(),
+                        GenderEnum.valueOf(proj.getGender())
+                ))
+                .toList();
+
+        return discipleMapper.toResponseDto(entity, children, inviter, parents);
     }
 
     private void validateUniqueDniOnUpdate(String dni, Long currentId) {
@@ -362,24 +400,36 @@ public class DiscipleServiceImpl implements DiscipleService {
             return;
         }
 
-        List<DiscipleRelationship> existingRelationships = discipleRelationshipRepository.findBySourceDisciple_IdAndRelationshipType(
-                parent.getId(),
-                RelationshipType.PARENT_CHILD
-        );
+        List<ChildRelationshipProjection> existingRelationships = discipleRelationshipRepository
+                .findChildRelationshipsByParentId(parent.getId(), RelationshipType.PARENT_CHILD.name());
 
         List<Long> incomingChildIds = childrenRequest.stream()
                 .map(DiscipleChildUpdateRequestDto::id)
                 .filter(Objects::nonNull)
                 .toList();
 
-        existingRelationships.stream()
-                .filter(relationship -> !incomingChildIds.contains(relationship.getTargetDisciple().getId()))
-                .forEach(relationship -> {
-                    Long childId = relationship.getTargetDisciple().getId();
-                    discipleRelationshipRepository.delete(relationship);
-                    discipleRepository.deleteById(childId);
-                    log.debug("Hijo con id {} eliminado por no estar en la lista de actualización", childId);
-                });
+        List<ChildRelationshipProjection> toDelete = existingRelationships.stream()
+                .filter(rel -> !incomingChildIds.contains(rel.getChildId()))
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            List<Long> relationshipIdsToDelete = toDelete.stream()
+                    .map(ChildRelationshipProjection::getRelationshipId)
+                    .toList();
+
+            List<Long> childIdsToDelete = toDelete.stream()
+                    .map(ChildRelationshipProjection::getChildId)
+                    .toList();
+
+            // Un solo DELETE para todas las relaciones
+            discipleRelationshipRepository.deleteAllById(relationshipIdsToDelete);
+
+            // Un solo DELETE para todos los hijos
+            discipleRepository.deleteAllById(childIdsToDelete);
+
+            childIdsToDelete.forEach(childId ->
+                    log.debug("Hijo con id {} eliminado por no estar en la lista de actualización", childId));
+        }
 
         childrenRequest.forEach(childDto -> {
             if (childDto.id() != null) {

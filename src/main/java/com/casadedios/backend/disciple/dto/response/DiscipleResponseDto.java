@@ -46,5 +46,7 @@ public record DiscipleResponseDto(
 
         BirthdayAlertDto birthdayAlert,
 
-        DiscipleInviterResponseDto invitedBy
+        DiscipleInviterResponseDto invitedBy,
+
+        List<DiscipleParentResponseDto> parents
 ) {}

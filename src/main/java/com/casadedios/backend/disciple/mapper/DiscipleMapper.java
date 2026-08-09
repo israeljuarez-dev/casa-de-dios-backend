@@ -4,6 +4,7 @@ import com.casadedios.backend.disciple.dto.request.DiscipleRegisterRequestDto;
 import com.casadedios.backend.disciple.dto.request.DiscipleUpdateRequestDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleChildResponseDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleInviterResponseDto;
+import com.casadedios.backend.disciple.dto.response.DiscipleParentResponseDto;
 import com.casadedios.backend.disciple.dto.response.DiscipleResponseDto;
 import com.casadedios.backend.disciple.enums.MaritalStatus;
 import com.casadedios.backend.disciple.persistence.model.Disciple;
@@ -38,21 +39,25 @@ public interface DiscipleMapper {
     @Mapping(target = "children", ignore = true)
     @Mapping(target = "invitedBy", ignore = true)
     @Mapping(target = "isLeader", source = "leader")
+    @Mapping(target = "parents", ignore = true)
     DiscipleResponseDto toResponseDto(
             Disciple entity,
             @Context List<DiscipleChildResponseDto> children,
-            @Context DiscipleInviterResponseDto invitedBy
+            @Context DiscipleInviterResponseDto invitedBy,
+            @Context List<DiscipleParentResponseDto> parents
     );
 
     @AfterMapping
     default void attachRelationships(
             @MappingTarget DiscipleResponseDto.DiscipleResponseDtoBuilder builder,
             @Context List<DiscipleChildResponseDto> children,
-            @Context DiscipleInviterResponseDto invitedBy
+            @Context DiscipleInviterResponseDto invitedBy,
+            @Context List<DiscipleParentResponseDto> parents
     ) {
         builder.children(children)
                 .hasChildren(!children.isEmpty())
-                .invitedBy(invitedBy);
+                .invitedBy(invitedBy)
+                .parents(parents);
     }
     List<DiscipleResponseDto> toResponseDtoList(List<Disciple> entities);
 
