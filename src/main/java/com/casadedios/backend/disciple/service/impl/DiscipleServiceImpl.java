@@ -271,14 +271,14 @@ public class DiscipleServiceImpl implements DiscipleService {
     }
 
     private void validateUniqueDni(String dni) {
-        if (dni != null && discipleRepository.existsByDni(dni)) {
+        if (dni != null && !dni.isBlank() && discipleRepository.existsByDniAndActiveTrue(dni)) {
             log.warn("Intento de registrar un discípulo con un DNI ya existente.");
             throw new CasaDeDiosException(ApiError.DUPLICATE_DNI);
         }
     }
 
     private void validateUniquePhoneNumber(String phoneNumber) {
-        if (phoneNumber != null && discipleRepository.existsByPhoneNumber(phoneNumber)) {
+        if (phoneNumber != null && !phoneNumber.isBlank() && discipleRepository.existsByPhoneNumberAndActiveTrue(phoneNumber)) {
             log.warn("Intento de registrar un discípulo con un número de teléfono ya existente.");
             throw new CasaDeDiosException(ApiError.DUPLICATE_PHONE_NUMBER);
         }
@@ -382,14 +382,14 @@ public class DiscipleServiceImpl implements DiscipleService {
     }
 
     private void validateUniqueDniOnUpdate(String dni, Long currentId) {
-        if (dni != null && discipleRepository.existsByDniAndIdNot(dni, currentId)) {
+        if (dni != null && !dni.isBlank() && discipleRepository.existsByDniAndIdNotAndActiveTrue(dni, currentId)) {
             log.warn("Intento de actualizar el discípulo {} con un DNI ya usado por otro registro.", currentId);
             throw new CasaDeDiosException(ApiError.DUPLICATE_DNI);
         }
     }
 
     private void validateUniquePhoneNumberOnUpdate(String phoneNumber, Long currentId) {
-        if (phoneNumber != null && discipleRepository.existsByPhoneNumberAndIdNot(phoneNumber, currentId)) {
+        if (phoneNumber != null && !phoneNumber.isBlank() && discipleRepository.existsByPhoneNumberAndIdNotAndActiveTrue(phoneNumber, currentId)) {
             log.warn("Intento de actualizar el discípulo {} con un teléfono ya usado por otro registro.", currentId);
             throw new CasaDeDiosException(ApiError.DUPLICATE_PHONE_NUMBER);
         }

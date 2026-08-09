@@ -16,13 +16,15 @@ public interface DiscipleRepository extends JpaRepository<Disciple, Long>, JpaSp
 
     Optional<Disciple> findByIdAndActiveTrue(Long id);
 
-    boolean existsByDni(String dni);
+    boolean existsByDniAndActiveTrue(String dni);
 
-    boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumberAndActiveTrue(String phoneNumber);
 
-    boolean existsByDniAndIdNot(String dni, Long id);
+    @Query(DiscipleQueries.EXISTS_BY_DNI_AND_ID_NOT_AND_ACTIVE_TRUE)
+    boolean existsByDniAndIdNotAndActiveTrue(@Param("dni") String dni, @Param("id") Long id);
 
-    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long id);
+    @Query(DiscipleQueries.EXISTS_BY_PHONE_NUMBER_AND_ID_NOT_AND_ACTIVE_TRUE)
+    boolean existsByPhoneNumberAndIdNotAndActiveTrue(@Param("phoneNumber") String phoneNumber, @Param("id") Long id);
 
     @Query(DiscipleQueries.SOFT_DELETE_BY_ID)
     @Modifying
