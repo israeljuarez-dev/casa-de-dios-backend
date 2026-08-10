@@ -8,6 +8,8 @@ import lombok.Builder;
 
 @Builder
 public record DiscipleSearchCriteriaDto(
+        String search,
+
         String firstName,
 
         String lastName,
@@ -30,6 +32,10 @@ public record DiscipleSearchCriteriaDto(
 
         if (size == null || size < 1) {
             size = 10;
+        }
+
+        if (search != null && search.isBlank()) {
+            search = null;
         }
     }
 

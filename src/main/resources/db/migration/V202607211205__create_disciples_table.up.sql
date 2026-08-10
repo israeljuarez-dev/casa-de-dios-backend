@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 -- ============================================================================
 -- disciples
 -- ============================================================================
@@ -64,8 +66,6 @@ COMMENT ON COLUMN disciples.is_leader IS 'Indica si el discípulo completó el n
 COMMENT ON COLUMN disciples.active IS 'Indica si el discípulo está activo; FALSE = borrado lógico (soft delete), no visible en consultas normales';
 COMMENT ON COLUMN disciples.created_at IS 'Fecha y hora de creación del registro';
 COMMENT ON COLUMN disciples.updated_at IS 'Fecha y hora de la última modificación del registro';
-
-
 
 -- ============================================================================
 -- disciple_relationships
