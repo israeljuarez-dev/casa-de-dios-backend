@@ -53,8 +53,6 @@ public class DiscipleServiceImpl implements DiscipleService {
 
     private final DiscipleDateCalculator discipleDateCalculator;
 
-
-
     @Override
     @Transactional(readOnly = true)
     public PaginationResponseDto<DiscipleResponseDto> findAll(DiscipleSearchCriteriaDto criteria){
