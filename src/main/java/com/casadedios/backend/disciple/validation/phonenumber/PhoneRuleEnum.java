@@ -1,5 +1,7 @@
 package com.casadedios.backend.disciple.validation.phonenumber;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -27,9 +29,11 @@ public enum PhoneRuleEnum {
 
     RUSSIA("7", 10, new String[]{"9"}, "10 dígitos empezando con 9 (ej: 9031234567)");
 
+    @Getter
     private final String countryCode;
     private final int expectedLength;
     private final String[] validPrefixes;
+    @Getter
     private final String expectedFormat;
 
     // Índice de lookup: código de país -> regla
@@ -53,13 +57,5 @@ public enum PhoneRuleEnum {
         }
 
         return Arrays.stream(validPrefixes).anyMatch(phoneNumber::startsWith);
-    }
-
-    public String getCountryCode() {
-        return countryCode;
-    }
-
-    public String getExpectedFormat() {
-        return expectedFormat;
     }
 }

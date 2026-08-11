@@ -12,8 +12,5 @@ import java.lang.annotation.*;
 public @interface ValidPhone {
     String message() default "Número de celular inválido para el código de país indicado";
 
-    Class<?>[] groups() default {};
-
     Class<? extends Payload>[] payload() default {};
-
 }
