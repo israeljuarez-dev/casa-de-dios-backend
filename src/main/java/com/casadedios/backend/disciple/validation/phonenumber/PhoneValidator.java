@@ -11,14 +11,15 @@ public class PhoneValidator implements ConstraintValidator<ValidPhone, PhoneVali
 
     @Override
     public boolean isValid(PhoneValidatable dto, ConstraintValidatorContext context) {
-        // Si ambos campos son nulos, se considera válido (campos opcionales).
-        // La obligatoriedad se maneja con @NotNull en el DTO si se requiere.
-        if (dto.getPhoneNumber() == null && dto.getPhoneCodeNumber() == null) {
+        boolean phoneNumberIsEmpty = dto.getPhoneNumber() == null || dto.getPhoneNumber().isBlank();
+        boolean phoneCodeIsEmpty = dto.getPhoneCodeNumber() == null || dto.getPhoneCodeNumber().isBlank();
+
+        if (phoneNumberIsEmpty && phoneCodeIsEmpty) {
             return true;
         }
 
         // Si uno de los dos está presente, el otro también debe estarlo
-        if (dto.getPhoneNumber() == null || dto.getPhoneCodeNumber() == null) {
+        if (phoneNumberIsEmpty || phoneCodeIsEmpty) {
             return buildMessage(
                     context,
                     "phoneNumber",
