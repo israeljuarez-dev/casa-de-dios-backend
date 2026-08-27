@@ -22,7 +22,6 @@ public record DiscipleChildRegisterRequestDto(
         @NotNull(message = "El género del hijo es requerido")
         GenderEnum gender,
 
-        @NotNull(message = "La fecha de nacimiento es obligatoria")
         @Past(message = "La fecha de nacimiento debe ser en tiempo pasado")
         LocalDate birthDate
 ) {}

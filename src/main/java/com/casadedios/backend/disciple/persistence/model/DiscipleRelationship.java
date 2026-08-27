@@ -24,18 +24,12 @@ public class DiscipleRelationship {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @ManyToOne(
-            targetEntity = Disciple.class,
-            fetch = FetchType.LAZY
-    )
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_disciple_id", nullable = false)
     @ToString.Exclude
     private Disciple sourceDisciple;
 
-    @ManyToOne(
-            targetEntity = Disciple.class,
-            fetch = FetchType.LAZY
-    )
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_disciple_id", nullable = false)
     @ToString.Exclude
     private Disciple targetDisciple;

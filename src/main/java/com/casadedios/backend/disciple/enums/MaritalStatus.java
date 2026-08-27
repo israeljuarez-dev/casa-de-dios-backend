@@ -1,5 +1,8 @@
 package com.casadedios.backend.disciple.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum MaritalStatus {
     SINGLE("Soltero/a"),
     MARRIED("Casado/a"),
@@ -11,10 +14,6 @@ public enum MaritalStatus {
 
     MaritalStatus(String displayName) {
         this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
     }
 }
 

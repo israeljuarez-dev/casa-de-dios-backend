@@ -3,6 +3,7 @@ package com.casadedios.backend.auth.persistence.model;
 import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.auth.enums.RoleEnum;
 import com.casadedios.backend.common.listener.EntityAuditListener;
+import com.casadedios.backend.disciple.persistence.model.Disciple;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,25 +45,25 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private GenderEnum gender;
 
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private RoleEnum role;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean enabled = true;
 
     @Column(name = "account_non_expired", nullable = false)
     @Builder.Default
-    private boolean accountNotExpired = true;
+    private boolean accountNonExpired = true;
 
     @Column(name = "account_non_locked", nullable = false)
     @Builder.Default
-    private boolean accountNotLocked = true;
+    private boolean accountNonLocked = true;
 
     @Column(name = "credentials_non_expired", nullable = false)
     @Builder.Default
-    private boolean credentialNotExpired = true;
-
-    @Column(nullable = false, length = 20)
-    @Enumerated(EnumType.STRING)
-    private RoleEnum role;
+    private boolean credentialNonExpired = true;
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;

@@ -3,6 +3,7 @@ package com.casadedios.backend.common.exception;
 import com.casadedios.backend.common.exception.dto.ErrorDto;
 import com.casadedios.backend.common.exception.enums.ApiError;
 import com.casadedios.backend.common.exception.model.CasaDeDiosException;
+import io.jsonwebtoken.io.IOException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -93,6 +94,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleUnexpectedException(Exception exception) {
         log.error("Error inesperado no controlado", exception);
+        return ResponseEntity
+                .status(ApiError.INTERNAL_ERROR.getStatus())
+                .body(new ErrorDto(ApiError.INTERNAL_ERROR.getMessage(), List.of()));
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorDto> handleIOException(IOException exception) {
+        log.error("Error de I/O no controlado", exception);
         return ResponseEntity
                 .status(ApiError.INTERNAL_ERROR.getStatus())
                 .body(new ErrorDto(ApiError.INTERNAL_ERROR.getMessage(), List.of()));

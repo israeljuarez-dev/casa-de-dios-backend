@@ -1,5 +1,6 @@
 package com.casadedios.backend.disciple.service.impl;
 
+import com.casadedios.backend.cellgroup.persistence.repository.CellGroupMemberRepository;
 import com.casadedios.backend.common.dto.response.PaginationResponseDto;
 import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.common.exception.enums.ApiError;
@@ -35,9 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +51,8 @@ public class DiscipleServiceImpl implements DiscipleService {
     private final DiscipleMapper discipleMapper;
 
     private final DiscipleDateCalculator discipleDateCalculator;
+
+    private final CellGroupMemberRepository cellGroupMemberRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -77,7 +78,10 @@ public class DiscipleServiceImpl implements DiscipleService {
     public DiscipleResponseDto create(DiscipleRegisterRequestDto request) {
         validateCoupleNameRequirement(request.maritalStatus(), request.coupleName());
 
-        validateIsLeaderRequirement(request.isLeader(), request.spiritualLevel());
+        validateIsLeaderRequirement(request.isCellGroupLeader(), request.spiritualLevel());
+
+        boolean isTeacher = Boolean.TRUE.equals(request.isTeacher());
+        validateIsTeacherRequirement(isTeacher, request.spiritualLevel());
 
         validateUniqueDni(request.dni());
         validateUniquePhoneNumber(request.phoneNumber());
@@ -106,7 +110,9 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         validateCoupleNameRequirement(disciple.getMaritalStatus(), disciple.getCoupleName());
 
-        validateIsLeaderRequirement(disciple.isLeader(), disciple.getSpiritualLevel());
+        validateIsLeaderRequirement(disciple.isCellGroupLeader(), disciple.getSpiritualLevel());
+
+        validateIsTeacherRequirement(disciple.isTeacher(), disciple.getSpiritualLevel());
 
         Disciple updatedEntity = discipleRepository.save(disciple);
 
@@ -168,17 +174,27 @@ public class DiscipleServiceImpl implements DiscipleService {
         Map<Long, List<DiscipleChildResponseDto>> childrenByParentId = fetchChildrenMap(discipleIds);
         Map<Long, DiscipleInviterResponseDto> inviterByDiscipleId = fetchInvitersMap(discipleIds);
         Map<Long, List<DiscipleParentResponseDto>> parentsByChildId = fetchParentsMap(discipleIds);
+        Set<Long> cellGroupMemberIds = fetchCellGroupMemberIds(discipleIds);
 
         return disciples.stream()
-                .map(disciple -> discipleMapper.toResponseDto(
-                        disciple,
-                        childrenByParentId.getOrDefault(disciple.getId(), List.of()),
-                        inviterByDiscipleId.get(disciple.getId()),
-                        parentsByChildId.getOrDefault(disciple.getId(), List.of()) // AÑADIDO
-                ))
+                .map(disciple -> {
+                    DiscipleResponseDto dto = discipleMapper.toResponseDto(disciple);
+                    return dto.toBuilder()
+                            .children(childrenByParentId.getOrDefault(disciple.getId(), List.of()))
+                            .hasChildren(!childrenByParentId.getOrDefault(disciple.getId(), List.of()).isEmpty())
+                            .invitedBy(inviterByDiscipleId.get(disciple.getId()))
+                            .parents(parentsByChildId.getOrDefault(disciple.getId(), List.of()))
+                            .isCellGroupMember(cellGroupMemberIds.contains(disciple.getId()))
+                            .build();
+                })
                 .toList();
     }
 
+    private Set<Long> fetchCellGroupMemberIds(List<Long> discipleIds) {
+        return new HashSet<>(cellGroupMemberRepository.findDiscipleIdsByDiscipleIdIn(discipleIds));
+    }
+
+    /*
     private Map<Long, List<DiscipleChildResponseDto>> fetchChildrenMap(List<Long> discipleIds) {
         return discipleRelationshipRepository.findChildrenBySourceIds(discipleIds, RelationshipType.PARENT_CHILD.name()).stream()
                 .collect(Collectors.groupingBy(
@@ -195,8 +211,22 @@ public class DiscipleServiceImpl implements DiscipleService {
                                 Collectors.toList()
                         )
                 ));
+    }*/
+
+    private Map<Long, List<DiscipleChildResponseDto>> fetchChildrenMap(List<Long> discipleIds) {
+        return discipleRelationshipRepository
+                .findChildrenBySourceIds(discipleIds, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        ChildProjection::getParentId,
+                        Collectors.mapping(
+                                discipleMapper::fromChildProjection,
+                                Collectors.toList()
+                        )
+                ));
     }
 
+    /*
     private Map<Long, List<DiscipleParentResponseDto>> fetchParentsMap(List<Long> discipleIds) {
         return discipleRelationshipRepository
                 .findParentsByChildIds(discipleIds, RelationshipType.PARENT_CHILD.name())
@@ -213,8 +243,22 @@ public class DiscipleServiceImpl implements DiscipleService {
                                 Collectors.toList()
                         )
                 ));
+    }*/
+
+    private Map<Long, List<DiscipleParentResponseDto>> fetchParentsMap(List<Long> discipleIds) {
+        return discipleRelationshipRepository
+                .findParentsByChildIds(discipleIds, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        ParentProjection::getChildId,
+                        Collectors.mapping(
+                                discipleMapper::fromParentProjection,
+                                Collectors.toList()
+                        )
+                ));
     }
 
+    /*
     private Map<Long, DiscipleInviterResponseDto> fetchInvitersMap(List<Long> discipleIds) {
         return discipleRelationshipRepository.findInvitersByTargetIds(discipleIds, RelationshipType.INVITED_BY.name()).stream()
                 .collect(Collectors.toMap(
@@ -224,6 +268,16 @@ public class DiscipleServiceImpl implements DiscipleService {
                                 proj.getFirstName(),
                                 proj.getLastName()
                         )
+                ));
+    }*/
+
+    private Map<Long, DiscipleInviterResponseDto> fetchInvitersMap(List<Long> discipleIds) {
+        return discipleRelationshipRepository
+                .findInvitersByTargetIds(discipleIds, RelationshipType.INVITED_BY.name())
+                .stream()
+                .collect(Collectors.toMap(
+                        InviterProjection::getDiscipleId,
+                        discipleMapper::fromInviterProjection
                 ));
     }
 
@@ -248,22 +302,32 @@ public class DiscipleServiceImpl implements DiscipleService {
         }
     }
 
-    private void validateIsLeaderRequirement(boolean isLeader, SpiritualLevel spiritualLevel) {
+    private void validateIsLeaderRequirement(boolean isCellGroupLeader, SpiritualLevel spiritualLevel) {
         boolean eligible = spiritualLevel.isLeaderEligible();
 
-        if (isLeader && !eligible) {
-            log.warn("Validación fallida: 'isLeader' no puede ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
+        if (isCellGroupLeader && !eligible) {
+            log.warn("Validación fallida: 'isCellGroupLeader' no puede ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
             throw new CasaDeDiosException(
                     ApiError.VALIDATION_ERROR,
-                    List.of("isLeader - solo puede ser true cuando el nivel espiritual es LEADER, CELL_LEADER o LEADERSHIP_SCHOOL_TEACHER")
+                    List.of("isCellGroupLeader - solo puede ser true cuando el nivel espiritual es LEADER")
             );
         }
 
-        if (!isLeader && eligible) {
-            log.warn("Validación fallida: 'isLeader' debe ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
+        if (!isCellGroupLeader && eligible) {
+            log.warn("Validación fallida: 'isCellGroupLeader' debe ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
             throw new CasaDeDiosException(
                     ApiError.VALIDATION_ERROR,
-                    List.of("isLeader - debe ser true cuando el nivel espiritual es LEADER, CELL_LEADER o LEADERSHIP_SCHOOL_TEACHER")
+                    List.of("isCellGroupLeader - debe ser true cuando el nivel espiritual es LEADER")
+            );
+        }
+    }
+
+    private void validateIsTeacherRequirement(boolean isTeacher, SpiritualLevel spiritualLevel) {
+        if (isTeacher && spiritualLevel != SpiritualLevel.LEADER) {
+            log.warn("Validación fallida: 'isTeacher' no puede ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
+            throw new CasaDeDiosException(
+                    ApiError.VALIDATION_ERROR,
+                    List.of("isTeacher - solo puede ser true cuando el nivel espiritual es LEADER")
             );
         }
     }
@@ -282,6 +346,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         }
     }
 
+    /*
     private void attachChildren(Disciple parent, List<DiscipleChildRegisterRequestDto> childrenRequest) {
         if (childrenRequest == null || childrenRequest.isEmpty()) {
             return;
@@ -313,6 +378,28 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         // Un solo batch INSERT de relaciones
         discipleRelationshipRepository.saveAll(relationships);
+    }*/
+
+    private void attachChildren(Disciple parent, List<DiscipleChildRegisterRequestDto> childrenRequest) {
+        if (childrenRequest == null || childrenRequest.isEmpty()) {
+            return;
+        }
+
+        List<Disciple> children = childrenRequest.stream()
+                .map(discipleMapper::childRegisterToEntity)
+                .toList();
+
+        List<Disciple> savedChildren = discipleRepository.saveAll(children);
+
+        List<DiscipleRelationship> relationships = savedChildren.stream()
+                .map(child -> DiscipleRelationship.builder()
+                        .sourceDisciple(parent)
+                        .targetDisciple(child)
+                        .relationshipType(RelationshipType.PARENT_CHILD)
+                        .build())
+                .toList();
+
+        discipleRelationshipRepository.saveAll(relationships);
     }
 
     private void attachInviter(Disciple disciple, Long invitedByDiscipleId) {
@@ -338,6 +425,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         discipleRelationshipRepository.save(relationship);
     }
 
+    /*
     private DiscipleResponseDto toResponseDtoWithRelationships(Disciple entity) {
         List<Long> id = List.of(entity.getId());
 
@@ -376,7 +464,50 @@ public class DiscipleServiceImpl implements DiscipleService {
                 ))
                 .toList();
 
-        return discipleMapper.toResponseDto(entity, children, inviter, parents);
+        boolean isCellGroupMember = cellGroupMemberRepository.existsByDisciple_Id(entity.getId());
+
+        DiscipleResponseDto dto = discipleMapper.toResponseDto(entity);
+        return dto.toBuilder()
+                .children(children)
+                .hasChildren(!children.isEmpty())
+                .invitedBy(inviter)
+                .parents(parents)
+                .isCellGroupMember(isCellGroupMember)
+                .build();
+    }*/
+
+    private DiscipleResponseDto toResponseDtoWithRelationships(Disciple entity) {
+        List<Long> ids = List.of(entity.getId());
+
+        List<DiscipleChildResponseDto> children = discipleRelationshipRepository
+                .findChildrenBySourceIds(ids, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .map(discipleMapper::fromChildProjection)
+                .toList();
+
+        DiscipleInviterResponseDto inviter = discipleRelationshipRepository
+                .findInvitersByTargetIds(ids, RelationshipType.INVITED_BY.name())
+                .stream()
+                .findFirst()
+                .map(discipleMapper::fromInviterProjection)
+                .orElse(null);
+
+        List<DiscipleParentResponseDto> parents = discipleRelationshipRepository
+                .findParentsByChildIds(ids, RelationshipType.PARENT_CHILD.name())
+                .stream()
+                .map(discipleMapper::fromParentProjection)
+                .toList();
+
+        boolean isCellGroupMember = cellGroupMemberRepository.existsByDisciple_Id(entity.getId());
+
+        DiscipleResponseDto dto = discipleMapper.toResponseDto(entity);
+        return dto.toBuilder()
+                .children(children)
+                .hasChildren(!children.isEmpty())
+                .invitedBy(inviter)
+                .parents(parents)
+                .isCellGroupMember(isCellGroupMember)
+                .build();
     }
 
     private void validateUniqueDniOnUpdate(String dni, Long currentId) {
@@ -466,6 +597,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         discipleRepository.save(childEntity);
     }
 
+    /*
     private void createNewChild(Disciple parent, DiscipleChildUpdateRequestDto childDto) {
         Disciple childEntity = Disciple.builder()
                 .firstName(childDto.firstName())
@@ -477,6 +609,18 @@ public class DiscipleServiceImpl implements DiscipleService {
                 .build();
 
         Disciple savedChild = discipleRepository.save(childEntity);
+
+        DiscipleRelationship relationship = DiscipleRelationship.builder()
+                .sourceDisciple(parent)
+                .targetDisciple(savedChild)
+                .relationshipType(RelationshipType.PARENT_CHILD)
+                .build();
+
+        discipleRelationshipRepository.save(relationship);
+    }*/
+
+    private void createNewChild(Disciple parent, DiscipleChildUpdateRequestDto childDto) {
+        Disciple savedChild = discipleRepository.save(discipleMapper.childUpdateToEntity(childDto));
 
         DiscipleRelationship relationship = DiscipleRelationship.builder()
                 .sourceDisciple(parent)

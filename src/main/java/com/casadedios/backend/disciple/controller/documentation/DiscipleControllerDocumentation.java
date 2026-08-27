@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.io.IOException;
+
 @Tag(name = "Discípulos", description = "Gestión de discípulos: registro, edición, consulta y eliminación")
 public interface DiscipleControllerDocumentation {
 
@@ -189,7 +191,7 @@ public interface DiscipleControllerDocumentation {
                                               "dni": "70100033",
                                               "maritalStatus": "SINGLE",
                                               "spiritualLevel": "GUEST",
-                                              "isLeader": false,
+                                              "isCellGroupLeader": false,
                                               "children": [
                                                 {
                                                   "firstName": "Mateo",
@@ -361,7 +363,7 @@ public interface DiscipleControllerDocumentation {
                     in = ParameterIn.QUERY
             ),
             @Parameter(
-                    name = "isLeader",
+                    name = "isCellGroupLeader",
                     description = "Filtro por si el discípulo es líder de célula",
                     example = "false",
                     in = ParameterIn.QUERY
@@ -391,5 +393,5 @@ public interface DiscipleControllerDocumentation {
                     in = ParameterIn.QUERY
             )
     })
-    ResponseEntity<byte[]> exportToExcel(@ModelAttribute DiscipleSearchCriteriaDto criteria);
+    ResponseEntity<byte[]> exportToExcel(@ModelAttribute DiscipleSearchCriteriaDto criteria) throws IOException;
 }

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS cell_group_members CASCADE;
+
+DROP TABLE IF EXISTS cell_groups CASCADE;

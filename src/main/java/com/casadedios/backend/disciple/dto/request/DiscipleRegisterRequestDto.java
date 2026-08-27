@@ -26,7 +26,6 @@ public record DiscipleRegisterRequestDto(
         @NotNull(message = "El género es requerido")
         GenderEnum gender,
 
-        @NotNull(message = "La fecha de nacimiento es obligatoria")
         @Past(message = "La fecha de nacimiento debe ser en el pasado")
         LocalDate birthDate,
 
@@ -38,7 +37,7 @@ public record DiscipleRegisterRequestDto(
 
         String phoneNumber,
 
-        @Size(max = 255, message = "La dirección debe tener menos de 150 caracteres")
+        @Size(max = 255, message = "La dirección debe tener menos de 255 caracteres")
         String address,
 
         @Size(max = 20, message = "El DNI no puede superar los 20 caracteres")
@@ -53,10 +52,11 @@ public record DiscipleRegisterRequestDto(
         @NotNull(message = "El nivel espiritual es obligatorio")
         SpiritualLevel spiritualLevel,
 
-        boolean isLeader,
+        boolean isCellGroupLeader,
 
-        @Valid
-        List<DiscipleChildRegisterRequestDto> children,
+        Boolean isTeacher,
+
+        List<@Valid DiscipleChildRegisterRequestDto> children,
 
         Long invitedByDiscipleId
 

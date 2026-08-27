@@ -13,16 +13,20 @@ public record PaginationCriteriaDto(
         String sortDirection
 ) {
     public PaginationCriteriaDto{
-        if (page == null || page < 0) {
-            page = 0;
+        // Contrato público 1-indexed (page=1 = primera página), acorde a lo que ya asume el frontend.
+        // La conversión a 0-indexed (nativo de Spring Data) queda aislada en toPageable().
+        if (page == null || page < 1) {
+            page = 1;
         }
         if (size == null || size < 1) {
             size = 10;
         }
     }
     public Pageable toPageable() {
+        int zeroIndexedPage = page - 1; // único punto de conversión 1-indexed -> 0-indexed
+
         if (sortField == null || sortField.isBlank()) {
-            return PageRequest.of(page, size);
+            return PageRequest.of(zeroIndexedPage, size);
         }
 
         Sort.Direction direction =
@@ -31,7 +35,7 @@ public record PaginationCriteriaDto(
                         : Sort.Direction.ASC;
 
         return PageRequest.of(
-                page,
+                zeroIndexedPage,
                 size,
                 Sort.by(direction, sortField)
         );

@@ -1,4 +1,4 @@
-package com.casadedios.backend.disciple.util;
+package com.casadedios.backend.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

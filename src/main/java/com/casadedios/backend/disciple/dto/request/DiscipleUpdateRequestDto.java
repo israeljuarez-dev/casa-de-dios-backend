@@ -49,10 +49,11 @@ public record DiscipleUpdateRequestDto(
 
         SpiritualLevel spiritualLevel,
 
-        Boolean isLeader,
+        Boolean isCellGroupLeader,
 
-        @Valid
-        List<DiscipleChildUpdateRequestDto> children
+        Boolean isTeacher,
+
+        List<@Valid DiscipleChildUpdateRequestDto> children
 
 ) implements PhoneValidatable {
 

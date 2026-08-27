@@ -80,13 +80,13 @@ public final class DiscipleSpecification {
 
     private static void addFirstNamePredicate(String firstName, List<Predicate> predicates, Root<Disciple> root, CriteriaBuilder criteriaBuilder) {
         if (firstName != null && !firstName.isBlank()) {
-            predicates.add(ilike(root, criteriaBuilder, "firstName", likePattern(firstName.toLowerCase())));
+            predicates.add(ilike(root, criteriaBuilder, "firstName", likePattern(firstName.trim().toLowerCase())));
         }
     }
 
     private static void addLastNamePredicate(String lastName, List<Predicate> predicates, Root<Disciple> root, CriteriaBuilder criteriaBuilder) {
         if (lastName != null && !lastName.isBlank()) {
-            predicates.add(ilike(root, criteriaBuilder, "lastName", likePattern(lastName.toLowerCase())));
+            predicates.add(ilike(root, criteriaBuilder, "lastName", likePattern(lastName.trim().toLowerCase())));
         }
     }
 

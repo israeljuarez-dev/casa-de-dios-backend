@@ -38,7 +38,11 @@ public record DiscipleResponseDto(
 
         SpiritualLevel spiritualLevel,
 
-        boolean isLeader,
+        boolean isCellGroupLeader,
+
+        boolean isTeacher,
+
+        boolean isCellGroupMember,
 
         boolean hasChildren,
 

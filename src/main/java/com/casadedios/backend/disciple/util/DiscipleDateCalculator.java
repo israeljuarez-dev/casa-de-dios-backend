@@ -2,6 +2,7 @@ package com.casadedios.backend.disciple.util;
 
 import com.casadedios.backend.disciple.dto.response.BirthdayAlertDto;
 import lombok.RequiredArgsConstructor;
+import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
@@ -18,11 +19,13 @@ public class DiscipleDateCalculator {
 
     private final Clock clock;
 
+    @Named("calculateAge")
     public Integer calculateAge(LocalDate birthDate) {
         if (birthDate == null) return null;
         return Period.between(birthDate, LocalDate.now(clock)).getYears();
     }
 
+    @Named("calculateBirthdayAlert")
     public BirthdayAlertDto calculateBirthdayAlert(LocalDate birthDate) {
         if (birthDate == null) return null;
 

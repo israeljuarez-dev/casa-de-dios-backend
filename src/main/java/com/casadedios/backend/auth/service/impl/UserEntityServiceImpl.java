@@ -8,6 +8,7 @@ import com.casadedios.backend.auth.mapper.UserMapper;
 import com.casadedios.backend.auth.persistence.model.UserEntity;
 import com.casadedios.backend.auth.persistence.repository.UserEntityRepository;
 import com.casadedios.backend.auth.service.UserEntityService;
+import com.casadedios.backend.common.enums.GenderEnum;
 import com.casadedios.backend.common.exception.enums.ApiError;
 import com.casadedios.backend.common.exception.model.CasaDeDiosException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,10 @@ public class UserEntityServiceImpl implements UserEntityService {
     @Override
     @Transactional
     public AuthUserRegisterResponseDto create(AuthUserRegisterRequestDto authUserRegisterRequestDto) {
+        validateUniqueUsername(authUserRegisterRequestDto.username());
+        validateUniqueEmail(authUserRegisterRequestDto.email());
+        validatePastorGenderLimit(authUserRegisterRequestDto.gender());
+
         UserEntity user = userMapper.toEntity(authUserRegisterRequestDto);
 
         user.setPasswordHash(passwordEncoder.encode(authUserRegisterRequestDto.password()));
@@ -53,5 +58,27 @@ public class UserEntityServiceImpl implements UserEntityService {
                 });
 
         return userMapper.toProfileResponseDto(user);
+    }
+
+    private void validateUniqueUsername(String username) {
+        if (userEntityRepository.existsByUsername(username)) {
+            log.warn("Intento de registrar usuario con username ya existente: {}", username);
+            throw new CasaDeDiosException(ApiError.DUPLICATE_USERNAME);
+        }
+    }
+
+    private void validateUniqueEmail(String email) {
+        if (userEntityRepository.existsByEmail(email)) {
+            log.warn("Intento de registrar usuario con email ya existente: {}", email);
+            throw new CasaDeDiosException(ApiError.DUPLICATE_EMAIL);
+        }
+    }
+
+    private void validatePastorGenderLimit(GenderEnum gender) {
+        long count = userEntityRepository.countByGender(gender);
+        if (count >= 1) {
+            log.warn("Intento de registrar un segundo pastor del mismo género: {}", gender);
+            throw new CasaDeDiosException(ApiError.PASTOR_GENDER_LIMIT_EXCEEDED);
+        }
     }
 }

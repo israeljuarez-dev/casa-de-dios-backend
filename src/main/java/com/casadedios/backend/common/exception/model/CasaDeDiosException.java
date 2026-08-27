@@ -2,7 +2,7 @@ package com.casadedios.backend.common.exception.model;
 
 import com.casadedios.backend.common.exception.enums.ApiError;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 import java.util.List;
 
@@ -10,13 +10,13 @@ import java.util.List;
 public class CasaDeDiosException extends RuntimeException{
 
     // Código de estado a responder
-    private HttpStatus status;
+    private final HttpStatusCode status;
 
     // Título del error
-    private String description;
+    private final String description;
 
     // Razones del error
-    private List<String> reasons;
+    private final List<String> reasons;
 
     public CasaDeDiosException(ApiError error) {
         super(error.getMessage());

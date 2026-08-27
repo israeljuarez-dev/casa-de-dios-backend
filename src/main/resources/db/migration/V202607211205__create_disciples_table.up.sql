@@ -1,15 +1,15 @@
-CREATE EXTENSION IF NOT EXISTS unaccent;
-
 -- ============================================================================
 -- disciples
 -- ============================================================================
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 CREATE TABLE disciples (
                            id                  BIGINT GENERATED ALWAYS AS IDENTITY,
 
                            first_name          VARCHAR(150) NOT NULL,
                            last_name           VARCHAR(150) NOT NULL,
                            gender              VARCHAR(10)  NOT NULL,
-                           birth_date          DATE NOT NULL,
+                           birth_date          DATE,
                            occupation          VARCHAR(150),
 
                            phone_code_number   VARCHAR(10),
@@ -21,7 +21,9 @@ CREATE TABLE disciples (
                            couple_name         VARCHAR(150),
 
                            spiritual_level     VARCHAR(30) NOT NULL DEFAULT 'GUEST',
-                           is_leader           BOOLEAN NOT NULL DEFAULT FALSE,
+                           is_cell_group_leader BOOLEAN NOT NULL DEFAULT FALSE,
+                           is_teacher           BOOLEAN NOT NULL DEFAULT FALSE,
+
                            active              BOOLEAN NOT NULL DEFAULT TRUE,
 
                            created_at          TIMESTAMP NOT NULL DEFAULT now(),
@@ -37,7 +39,7 @@ CREATE TABLE disciples (
                                                                                                'GUEST', 'PRE_RETREAT', 'RETREAT', 'POST_RETREAT',
                                                                                                'LEADERSHIP_SCHOOL_1', 'LEADERSHIP_SCHOOL_2', 'LEADERSHIP_SCHOOL_3',
                                                                                                'LEADERSHIP_SCHOOL_4', 'LEADERSHIP_SCHOOL_5', 'LEADERSHIP_SCHOOL_6',
-                                                                                               'LEADER', 'CELL_LEADER', 'LEADERSHIP_SCHOOL_TEACHER'
+                                                                                               'LEADER'
                                ))
 );
 
@@ -62,10 +64,13 @@ COMMENT ON COLUMN disciples.dni IS 'Documento de identidad';
 COMMENT ON COLUMN disciples.marital_status IS 'Estado civil; por defecto SINGLE (aplica también a menores donde no corresponde otro estado)';
 COMMENT ON COLUMN disciples.couple_name IS 'Nombre del cónyuge; aplica únicamente cuando marital_status es distinto de SINGLE (regla validada en capa de servicio)';
 COMMENT ON COLUMN disciples.spiritual_level IS 'Nivel espiritual/formativo actual del discípulo dentro del proceso de la iglesia';
-COMMENT ON COLUMN disciples.is_leader IS 'Indica si el discípulo completó el nivel 6 de la Escuela de Líderes y está habilitado para dirigir una célula';
+COMMENT ON COLUMN disciples.is_cell_group_leader IS 'Indica si el discípulo es líder de una célula';
+COMMENT ON COLUMN disciples.is_teacher IS 'Indica si el discípulo es profesor de algún nivel de la Escuela de Líderes';
 COMMENT ON COLUMN disciples.active IS 'Indica si el discípulo está activo; FALSE = borrado lógico (soft delete), no visible en consultas normales';
 COMMENT ON COLUMN disciples.created_at IS 'Fecha y hora de creación del registro';
 COMMENT ON COLUMN disciples.updated_at IS 'Fecha y hora de la última modificación del registro';
+
+
 
 -- ============================================================================
 -- disciple_relationships

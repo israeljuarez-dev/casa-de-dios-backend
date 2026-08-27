@@ -8,6 +8,7 @@ import com.casadedios.backend.disciple.persistence.projection.InviterProjection;
 import com.casadedios.backend.disciple.persistence.projection.ParentProjection;
 import com.casadedios.backend.disciple.persistence.queries.DiscipleRelationshipQueries;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,6 +18,7 @@ import java.util.List;
 @Repository
 public interface DiscipleRelationshipRepository extends JpaRepository<DiscipleRelationship, Long> {
 
+    @Modifying
     void deleteByTargetDisciple_IdAndRelationshipType(Long targetDiscipleId, RelationshipType relationshipType);
 
     @Query(value = DiscipleRelationshipQueries.FIND_CHILDREN_BY_SOURCE_IDS, nativeQuery = true)

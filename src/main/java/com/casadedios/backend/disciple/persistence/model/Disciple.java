@@ -37,7 +37,7 @@ public class Disciple {
     @Column(name = "gender", nullable = false, length = 10)
     private GenderEnum gender;
 
-    @Column(name = "birth_date", nullable = false)
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     @Column(length = 150)
@@ -68,9 +68,13 @@ public class Disciple {
     @Builder.Default
     private SpiritualLevel spiritualLevel = SpiritualLevel.GUEST;
 
-    @Column(name = "is_leader", nullable = false)
+    @Column(name = "is_cell_group_leader", nullable = false)
     @Builder.Default
-    private boolean isLeader = false;
+    private boolean isCellGroupLeader = false;
+
+    @Column(name = "is_teacher", nullable = false)
+    @Builder.Default
+    private boolean isTeacher = false;
 
     @Column(name = "active", nullable = false)
     @Builder.Default
