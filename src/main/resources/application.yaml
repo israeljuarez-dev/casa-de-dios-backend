@@ -41,3 +41,7 @@ security:
     private-key: ${PRIVATE_KEY}
     user-generator: ${USER_GENERATOR}
     expiration-minutes: ${EXPIRATION_MINUTES}
+
+cors:
+  allowed-origins:
+    - http://localhost:4200
