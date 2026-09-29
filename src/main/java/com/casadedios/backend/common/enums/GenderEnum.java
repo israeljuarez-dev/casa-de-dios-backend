@@ -1,5 +1,8 @@
 package com.casadedios.backend.common.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum GenderEnum {
     MALE("Masculino"),
     FEMALE("Femenino");
@@ -10,7 +13,4 @@ public enum GenderEnum {
         this.description = description;
     }
 
-    public String getDescription() {
-        return description;
-    }
 }

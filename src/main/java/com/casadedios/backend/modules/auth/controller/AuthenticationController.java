@@ -1,5 +1,6 @@
 package com.casadedios.backend.modules.auth.controller;
 
+import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
 import com.casadedios.backend.modules.auth.controller.documentation.AuthenticationControllerDocumentation;
 import com.casadedios.backend.modules.auth.dto.request.AuthLoginRequestDto;
 import com.casadedios.backend.modules.auth.dto.response.AuthLoginResponseDto;
@@ -25,9 +26,9 @@ public class AuthenticationController implements AuthenticationControllerDocumen
 
     @PostMapping("/login")
     @Override
-    public ResponseEntity<ApiResponseDto<AuthLoginResponseDto>> login(@RequestBody @Valid AuthLoginRequestDto loginRequest) {
+    public ResponseEntity<ApiResponseBodyDto<AuthLoginResponseDto>> login(@RequestBody @Valid AuthLoginRequestDto loginRequest) {
         AuthLoginResponseDto result = userDetailsService.login(loginRequest);
-        return ResponseEntity.ok(ApiResponseDto.success(HttpStatus.OK.value(), "Inicio de sesión exitoso", result));
+        return ResponseEntity.ok(new ApiResponseBodyDto<>("Inicio de sesión exitoso", result));
     }
 }
 

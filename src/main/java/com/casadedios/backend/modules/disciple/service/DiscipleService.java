@@ -22,5 +22,4 @@ public interface DiscipleService {
 
     ByteArrayOutputStream exportToExcel(DiscipleSearchCriteriaDto criteria) throws IOException;
 
-    String generateExcelFileName();
 }

@@ -1,8 +1,9 @@
 package com.casadedios.backend.modules.auth.controller.documentation;
 
+import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
+import com.casadedios.backend.common.dto.response.ApiResponseDto;
 import com.casadedios.backend.modules.auth.dto.request.AuthLoginRequestDto;
 import com.casadedios.backend.modules.auth.dto.response.AuthLoginResponseDto;
-import com.casadedios.backend.common.dto.response.ApiResponseDto;
 import com.casadedios.backend.common.exception.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,33 +23,6 @@ public interface AuthenticationControllerDocumentation {
     @Operation(
             summary = "Iniciar sesión",
             description = "Autentica al usuario con sus credenciales y devuelve un token JWT.",
-            security = {},
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Inicio de sesión exitoso",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation =  ApiResponseDto.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "401",
-                            description = "Credenciales inválidas",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ErrorDto.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "400",
-                            description = "Datos de la solicitud inválidos",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ErrorDto.class)
-                            )
-                    )
-            },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -64,8 +38,63 @@ public interface AuthenticationControllerDocumentation {
                                     """
                             )
                     )
-            )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Inicio de sesión exitoso",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation =  ApiResponseDto.class),
+                                    examples = @ExampleObject(
+                                            name = "Login exitoso",
+                                            value = """
+                                                    {
+                                                      "status": 200,
+                                                      "message": "Autenticación exitosa",
+                                                      "success": true,
+                                                      "data": {
+                                                        "usernameOrEmail": "pastorwilly",
+                                                        "jwt": "eyJhbGciOiJIUzUxMiJ9..."
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Credenciales inválidas",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ErrorDto.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "message": "Credenciales inválidas",
+                                              "reasons": []
+                                            }
+                                            """)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Datos de la solicitud inválidos",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ErrorDto.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "message": "Datos inválidos",
+                                              "reasons": [
+                                                "usernameOrEmail - no puede estar vacío",
+                                                "password - no puede estar vacío"
+                                              ]
+                                            }
+                                            """)
+                            )
+                    )
+            }
     )
     @SecurityRequirements
-    ResponseEntity<ApiResponseDto<AuthLoginResponseDto>> login(@RequestBody @Valid AuthLoginRequestDto loginRequest);
+    ResponseEntity<ApiResponseBodyDto<AuthLoginResponseDto>> login(@RequestBody @Valid AuthLoginRequestDto loginRequest) ;
 }

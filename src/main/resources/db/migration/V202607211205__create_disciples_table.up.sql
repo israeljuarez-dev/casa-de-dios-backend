@@ -26,8 +26,8 @@ CREATE TABLE disciples (
 
                            active              BOOLEAN NOT NULL DEFAULT TRUE,
 
-                           created_at          TIMESTAMP NOT NULL DEFAULT now(),
-                           updated_at          TIMESTAMP NOT NULL DEFAULT now(),
+                           created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+                           updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
 
                            CONSTRAINT pk_disciples PRIMARY KEY (id),
                            CONSTRAINT chk_disciples_gender CHECK (gender IN ('MALE', 'FEMALE')),
@@ -81,7 +81,7 @@ CREATE TABLE disciple_relationships (
                                         target_disciple_id    BIGINT NOT NULL,
                                         relationship_type     VARCHAR(20) NOT NULL,
 
-                                        created_at            TIMESTAMP NOT NULL DEFAULT now(),
+                                        created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
 
                                         CONSTRAINT pk_disciple_relationships PRIMARY KEY (id),
                                         CONSTRAINT fk_disciple_relationships_source FOREIGN KEY (source_disciple_id)

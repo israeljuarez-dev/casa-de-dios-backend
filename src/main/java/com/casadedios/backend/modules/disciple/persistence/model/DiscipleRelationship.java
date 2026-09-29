@@ -16,7 +16,13 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(EntityAuditListener.class)
-@Table(name = "disciple_relationships")
+@Table(
+        name = "disciple_relationships",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_disciple_relationships",
+                columnNames = {"source_disciple_id", "target_disciple_id", "relationship_type"}
+        )
+)
 public class DiscipleRelationship {
 
     @Id

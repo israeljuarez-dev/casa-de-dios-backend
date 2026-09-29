@@ -1,11 +1,12 @@
 package com.casadedios.backend.modules.cellgroup.service.impl;
 
-import com.casadedios.backend.cellgroup.dto.request.*;
+import com.casadedios.backend.common.util.StringUtils;
 import com.casadedios.backend.modules.cellgroup.dto.request.*;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupLeaderResponseDto;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupMemberResponseDto;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupResponseDto;
 import com.casadedios.backend.modules.cellgroup.enums.MeetingDay;
+import com.casadedios.backend.modules.cellgroup.exception.CellGroupErrorEnum;
 import com.casadedios.backend.modules.cellgroup.export.CellGroupExcelExporter;
 import com.casadedios.backend.modules.cellgroup.mapper.CellGroupMapper;
 import com.casadedios.backend.modules.cellgroup.persistence.model.CellGroup;
@@ -17,9 +18,9 @@ import com.casadedios.backend.modules.cellgroup.persistence.repository.CellGroup
 import com.casadedios.backend.modules.cellgroup.service.CellGroupService;
 import com.casadedios.backend.common.dto.response.PaginationResponseDto;
 import com.casadedios.backend.common.enums.GenderEnum;
-import com.casadedios.backend.common.exception.enums.ApiError;
 import com.casadedios.backend.common.exception.model.CasaDeDiosException;
 import com.casadedios.backend.modules.disciple.enums.SpiritualLevel;
+import com.casadedios.backend.modules.disciple.exception.DiscipleErrorEnum;
 import com.casadedios.backend.modules.disciple.persistence.model.Disciple;
 import com.casadedios.backend.modules.disciple.persistence.repository.DiscipleRepository;
 import com.casadedios.backend.modules.disciple.util.DiscipleDateCalculator;
@@ -34,8 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -67,8 +66,8 @@ public class CellGroupServiceImpl implements CellGroupService {
                 : null;
 
         Page<CellGroupSummaryProjection> page = cellGroupRepository.findAllWithLeaderAndCount(
-                blankToNull(criteria.name()),
-                blankToNull(criteria.leaderName()),
+                StringUtils.blankToNull(criteria.name()),
+                StringUtils.blankToNull(criteria.leaderName()),
                 meetingDayParam,
                 criteria.isPastorCell(),
                 pageable
@@ -98,7 +97,8 @@ public class CellGroupServiceImpl implements CellGroupService {
             validateOnlyTwoPastorCellsPermitted();
 
             if (request.pastorCellGender() == null) {
-                throw new CasaDeDiosException(ApiError.PASTOR_CELL_GENDER_REQUIRED);
+                log.warn("Intento de registrar una célula principal sin especificar pastorCellGender");
+                throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_GENDER_REQUIRED);
             }
 
             validateNoDuplicatePastorCellForGender(request.pastorCellGender());
@@ -154,7 +154,7 @@ public class CellGroupServiceImpl implements CellGroupService {
     public void deleteById(Long id) {
         if (!cellGroupRepository.existsById(id)) {
             log.debug("No existe célula con id {} para eliminar", id);
-            throw new CasaDeDiosException(ApiError.CELL_GROUP_NOT_FOUND);
+            throw new CasaDeDiosException(CellGroupErrorEnum.CELL_GROUP_NOT_FOUND);
         }
 
         cellGroupRepository.deleteById(id);
@@ -176,7 +176,7 @@ public class CellGroupServiceImpl implements CellGroupService {
 
         return cellGroupMemberRepository.findMembersByCellGroupId(
                         cellGroupId,
-                        blankToNull(criteria.search()),
+                        StringUtils.blankToNull(criteria.search()),
                         spiritualLevelParam,
                         genderParam
                 ).stream()
@@ -198,7 +198,7 @@ public class CellGroupServiceImpl implements CellGroupService {
         }
 
         if (cellGroupMemberRepository.existsByCellGroup_IdAndDisciple_Id(cellGroupId, request.discipleId())) {
-            throw new CasaDeDiosException(ApiError.CELL_GROUP_MEMBER_ALREADY_EXISTS);
+            throw new CasaDeDiosException(CellGroupErrorEnum.CELL_GROUP_MEMBER_ALREADY_EXISTS);
         }
 
         CellGroupMember member = CellGroupMember.builder()
@@ -261,15 +261,16 @@ public class CellGroupServiceImpl implements CellGroupService {
 
         // Solo líderes de célula pueden ser parte de Los 12 del pastor
         if (!member.getDisciple().isCellGroupLeader()) {
-            throw new CasaDeDiosException(ApiError.PASTOR_CORE_TWELVE_MEMBER_MUST_BE_LEADER);
+            log.warn("Discípulo {} no es líder de célula, no puede formar parte de Los 12 del pastor", discipleId);
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CORE_TWELVE_MEMBER_MUST_BE_LEADER);
         }
 
         // Validar límite de 12 en toda la iglesia
-        long currentCount = cellGroupMemberRepository
-                .countByCellGroup_IdAndIsPastorCoreTwelveTrue(cellGroupId);
+        long currentCount = cellGroupMemberRepository.countByCellGroup_IdAndIsPastorCoreTwelveTrue(cellGroupId);
 
         if (!member.isPastorCoreTwelve() && currentCount >= PASTOR_CORE_TWELVE_LIMIT) {
-            throw new CasaDeDiosException(ApiError.PASTOR_CORE_TWELVE_LIMIT_EXCEEDED);
+            log.warn("Ya se alcanzó el límite de {} discípulos de Los 12 del pastor", PASTOR_CORE_TWELVE_LIMIT);
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CORE_TWELVE_LIMIT_EXCEEDED);
         }
 
         member.setCoreTwelve(true);          // Los 12 del pastor implica también ser Los 12 del líder
@@ -307,8 +308,8 @@ public class CellGroupServiceImpl implements CellGroupService {
                 : null;
 
         List<CellGroupSummaryProjection> projections = cellGroupRepository.findAllWithLeaderAndCount(
-                blankToNull(criteria.name()),
-                blankToNull(criteria.leaderName()),
+                StringUtils.blankToNull(criteria.name()),
+                StringUtils.blankToNull(criteria.leaderName()),
                 meetingDayParam,
                 criteria.isPastorCell(),
                 Pageable.unpaged()
@@ -326,20 +327,13 @@ public class CellGroupServiceImpl implements CellGroupService {
         return outputStream;
     }
 
-    @Override
-    public String generateExcelFileName() {
-        return "Reporte_Celulas_"
-                + LocalDate.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
-                + ".xlsx";
-    }
-
     // --- Métodos privados ---
 
     private CellGroup getCellGroupOrThrow(Long id) {
         return cellGroupRepository.findById(id)
                 .orElseThrow(() -> {
                     log.debug("No existe célula con id {}", id);
-                    return new CasaDeDiosException(ApiError.CELL_GROUP_NOT_FOUND);
+                    return new CasaDeDiosException(CellGroupErrorEnum.CELL_GROUP_NOT_FOUND);
                 });
     }
 
@@ -347,14 +341,14 @@ public class CellGroupServiceImpl implements CellGroupService {
         return discipleRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> {
                     log.debug("No existe discípulo activo con id {}", id);
-                    return new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
+                    return new CasaDeDiosException(DiscipleErrorEnum.DISCIPLE_NOT_FOUND);
                 });
     }
 
     private void validateLeaderSpiritualLevel(Disciple disciple) {
         if (disciple.getSpiritualLevel() != SpiritualLevel.LEADER) {
             log.warn("Discípulo {} no tiene nivel LEADER, no puede liderar una célula", disciple.getId());
-            throw new CasaDeDiosException(ApiError.DISCIPLE_NOT_A_LEADER);
+            throw new CasaDeDiosException(CellGroupErrorEnum.DISCIPLE_NOT_A_LEADER);
         }
     }
 
@@ -369,69 +363,99 @@ public class CellGroupServiceImpl implements CellGroupService {
     private void validateNoDuplicatePastorCellForGender(GenderEnum gender) {
         if (cellGroupRepository.existsByIsPastorCellTrueAndPastorCellGender(gender)) {
             log.warn("Intento de crear una segunda célula principal para el género {}", gender);
-            throw new CasaDeDiosException(ApiError.PASTOR_CELL_GENDER_ALREADY_EXISTS);
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_GENDER_ALREADY_EXISTS);
         }
     }
 
     private void validateCellGroupExists(Long cellGroupId) {
         if (!cellGroupRepository.existsById(cellGroupId)) {
-            throw new CasaDeDiosException(ApiError.CELL_GROUP_NOT_FOUND);
+            throw new CasaDeDiosException(CellGroupErrorEnum.CELL_GROUP_NOT_FOUND);
         }
     }
 
     private void validateUniqueName(String name) {
-        if (name != null && !name.isBlank() && cellGroupRepository.existsByName(name)) {
-            log.warn("Intento de registrar una célula con un nombre ya existente.");
-            throw new CasaDeDiosException(ApiError.DUPLICATE_CELL_GROUP_NAME);
+        if (name == null || name.isBlank()) {
+            log.debug("Nombre de célula no enviado, se omite validación de unicidad");
+            return;
         }
+
+        if (!cellGroupRepository.existsByName(name)) {
+            log.debug("El nombre '{}' está disponible para la célula", name);
+            return;
+        }
+
+        log.warn("Intento de registrar una célula con un nombre ya existente.");
+        throw new CasaDeDiosException(CellGroupErrorEnum.DUPLICATE_CELL_GROUP_NAME);
     }
 
     private void validateUniqueNameOnUpdate(String name, Long currentId) {
-        if (name != null && !name.isBlank() && cellGroupRepository.existsByNameAndIdNot(name, currentId)) {
-            log.warn("Intento de actualizar la célula {} con un nombre ya usado por otra célula.", currentId);
-            throw new CasaDeDiosException(ApiError.DUPLICATE_CELL_GROUP_NAME);
+        if (name == null || name.isBlank()) {
+            log.debug("Nombre de célula no enviado en la actualización, se omite validación de unicidad");
+            return;
         }
+
+        if (!cellGroupRepository.existsByNameAndIdNot(name, currentId)) {
+            log.debug("El nombre '{}' está disponible para la célula {}", name, currentId);
+            return;
+        }
+
+        log.warn("Intento de actualizar la célula {} con un nombre ya usado por otra célula.", currentId);
+        throw new CasaDeDiosException(CellGroupErrorEnum.DUPLICATE_CELL_GROUP_NAME);
     }
 
     private void validateLeaderIsNotAddingHimselfAsMember(CellGroup cellGroup, Disciple disciple) {
-        if (cellGroup.getLeader() != null && cellGroup.getLeader().getId().equals(disciple.getId())) {
-            log.warn("Discípulo {} intenta añadirse a su propia célula {} como miembro", disciple.getId(), cellGroup.getId());
-            throw new CasaDeDiosException(ApiError.LEADER_CANNOT_BE_OWN_CELL_MEMBER);
+        if (cellGroup.getLeader() == null) {
+            log.debug("La célula {} no tiene líder asignado, se omite validación de auto-membresía",
+                    cellGroup.getId());
+            return;
         }
+
+        if (!cellGroup.getLeader().getId().equals(disciple.getId())) {
+            log.debug("Discípulo {} no es el líder de la célula {}, puede añadirse como miembro",
+                    disciple.getId(), cellGroup.getId());
+            return;
+        }
+
+        log.warn("Discípulo {} intenta añadirse a su propia célula {} como miembro",
+                disciple.getId(), cellGroup.getId());
+        throw new CasaDeDiosException(CellGroupErrorEnum.LEADER_CANNOT_BE_OWN_CELL_MEMBER);
     }
 
     private void validateDiscipleIsNotAlreadyMemberOfAnotherCell(Long discipleId) {
         if (cellGroupMemberRepository.existsByDisciple_Id(discipleId)) {
             log.warn("Discípulo {} ya pertenece a otra célula", discipleId);
-            throw new CasaDeDiosException(ApiError.DISCIPLE_ALREADY_IN_ANOTHER_CELL);
+            throw new CasaDeDiosException(CellGroupErrorEnum.DISCIPLE_ALREADY_IN_ANOTHER_CELL);
         }
     }
 
     private void validateOnlyTwoPastorCellsPermitted() {
         if (cellGroupRepository.countByIsPastorCellTrue() >= 2) {
             log.warn("Intento de crear una tercera célula principal del pastor");
-            throw new CasaDeDiosException(ApiError.PASTOR_CELL_LIMIT_EXCEEDED);
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_LIMIT_EXCEEDED);
         }
     }
 
     private void validateMemberEligibilityForPastorCell(CellGroup cellGroup, Disciple disciple) {
         // Solo los discípulos leader pueden formar parte de la célula principal
         if (disciple.getSpiritualLevel() != SpiritualLevel.LEADER) {
-            throw new CasaDeDiosException(ApiError.PASTOR_CELL_MEMBER_MUST_BE_LEADER);
+            log.warn("Discípulo {} no tiene nivel LEADER, no puede ser miembro de la célula principal", disciple.getId());
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_MEMBER_MUST_BE_LEADER);
         }
 
         // Solo los discípulos del género del pastor se pueden asignar a su célula prícinpal
         GenderEnum cellGender = cellGroup.getPastorCellGender();
         if (disciple.getGender() != cellGender) {
-            throw new CasaDeDiosException(ApiError.PASTOR_CELL_GENDER_MISMATCH);
+            log.warn("Discípulo {} con género {} no coincide con el género {} de la célula principal",
+                    disciple.getId(), disciple.getGender(), cellGender);
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_GENDER_MISMATCH);
         }
 
         // Verifica que sean máximo 12 miembros
-        long currentCount = cellGroupMemberRepository
-                .countByCellGroup_IdAndDisciple_Gender(cellGroup.getId(), cellGender);
+        long currentCount = cellGroupMemberRepository.countByCellGroup_IdAndDisciple_Gender(cellGroup.getId(), cellGender);
 
         if (currentCount >= 12) {
-            throw new CasaDeDiosException(ApiError.PASTOR_CELL_MEMBER_LIMIT_EXCEEDED);
+            log.warn("La célula principal {} ya alcanzó el límite de 12 miembros", cellGroup.getId());
+            throw new CasaDeDiosException(CellGroupErrorEnum.PASTOR_CELL_MEMBER_LIMIT_EXCEEDED);
         }
     }
 
@@ -440,7 +464,7 @@ public class CellGroupServiceImpl implements CellGroupService {
         return cellGroupMemberRepository.findByCellGroup_IdAndDisciple_Id(cellGroupId, discipleId)
                 .orElseThrow(() -> {
                     log.debug("Discípulo {} no es miembro de célula {}", discipleId, cellGroupId);
-                    return new CasaDeDiosException(ApiError.CELL_GROUP_MEMBER_NOT_FOUND);
+                    return new CasaDeDiosException(CellGroupErrorEnum.CELL_GROUP_MEMBER_NOT_FOUND);
                 });
     }
 
@@ -517,13 +541,5 @@ public class CellGroupServiceImpl implements CellGroupService {
                         : null)
                 .memberCount(projection.getMemberCount())
                 .build();
-    }
-
-    private String blankToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isBlank() ? null : trimmed;
     }
 }

@@ -14,9 +14,9 @@ CREATE TABLE users (
                        account_non_expired      BOOLEAN NOT NULL DEFAULT TRUE,
                        account_non_locked       BOOLEAN NOT NULL DEFAULT TRUE,
                        credentials_non_expired  BOOLEAN NOT NULL DEFAULT TRUE,
-                       last_login_at            TIMESTAMP,
-                       created_at               TIMESTAMP NOT NULL DEFAULT now(),
-                       updated_at               TIMESTAMP NOT NULL DEFAULT now(),
+                       last_login_at            TIMESTAMPTZ,
+                       created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+                       updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
 
                        CONSTRAINT pk_users PRIMARY KEY (id),
                        CONSTRAINT uq_users_username UNIQUE (username),

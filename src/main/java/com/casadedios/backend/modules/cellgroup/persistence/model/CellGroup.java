@@ -26,7 +26,7 @@ public class CellGroup {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(name = "name", length = 150, nullable = false)
+    @Column(name = "name", length = 150, nullable = false, unique = true)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -14,7 +14,13 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
-@Table(name = "cell_group_members")
+@Table(
+        name = "cell_group_members",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_cell_group_members_cell_disciple",
+                columnNames = {"cell_group_id", "disciple_id"}
+        )
+)
 public class CellGroupMember {
 
     @Id
