@@ -24,6 +24,8 @@ public interface CellGroupMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "leader", ignore = true)
+    @Mapping(target = "pastorCellGender", ignore = true)
+    @Mapping(target = "pastorCell", source = "isPastorCell")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromDto(CellGroupUpdateRequestDto dto, @MappingTarget CellGroup entity);

@@ -1,5 +1,6 @@
 package com.casadedios.backend.modules.auth.controller;
 
+import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
 import com.casadedios.backend.modules.auth.controller.documentation.UserEntityControllerDocumentation;
 import com.casadedios.backend.modules.auth.dto.request.AuthUserRegisterRequestDto;
 import com.casadedios.backend.modules.auth.dto.response.AuthUserEntityProfileResponseDto;
@@ -24,19 +25,17 @@ public class UserEntityController implements UserEntityControllerDocumentation {
 
     @PostMapping("/register")
     @Override
-    public ResponseEntity<ApiResponseDto<AuthUserRegisterResponseDto>> register(@RequestBody @Valid AuthUserRegisterRequestDto request) {
+    public ResponseEntity<ApiResponseBodyDto<AuthUserRegisterResponseDto>> register(@RequestBody @Valid AuthUserRegisterRequestDto request) {
         AuthUserRegisterResponseDto result = userEntityService.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponseDto.success(HttpStatus.CREATED.value(), "Usuario registrado exitosamente", result));
+                .body(new ApiResponseBodyDto<>("Usuario registrado exitosamente", result));
     }
 
     @GetMapping("/me")
     @Override
-    public ResponseEntity<ApiResponseDto<AuthUserEntityProfileResponseDto>> me(@AuthenticationPrincipal String username) {
+    public ResponseEntity<ApiResponseBodyDto<AuthUserEntityProfileResponseDto>> me(@AuthenticationPrincipal String username) {
         AuthUserEntityProfileResponseDto profile = userEntityService.findCurrentUser(username);
-        return ResponseEntity.ok(
-                ApiResponseDto.success(HttpStatus.OK.value(), "Perfil del usuario autenticado", profile)
-        );
+        return ResponseEntity.ok(new ApiResponseBodyDto<>("Perfil del usuario autenticado", profile));
     }
 }

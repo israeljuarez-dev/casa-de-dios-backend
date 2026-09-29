@@ -1,9 +1,9 @@
 package com.casadedios.backend.common.exception;
 
 import com.casadedios.backend.common.exception.dto.ErrorDto;
-import com.casadedios.backend.common.exception.enums.ApiError;
+import com.casadedios.backend.common.exception.enums.CommonError;
 import com.casadedios.backend.common.exception.model.CasaDeDiosException;
-import io.jsonwebtoken.io.IOException;
+import java.io.IOException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 @Slf4j
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @Override
     @NullUnmarked
+    @Override
     protected @Nullable ResponseEntity<@NonNull Object> handleMethodArgumentNotValid(
             @NonNull MethodArgumentNotValidException exception,
             @NonNull HttpHeaders headers,
@@ -48,8 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         // Global errors: errores de anotaciones a nivel de clase (@ValidPhone, etc.)
         List<String> globalReasons = exception.getBindingResult().getGlobalErrors().stream()
-                .map(globalError ->
-                        Objects.requireNonNullElse(globalError.getDefaultMessage(), "Sin descripción")
+                .map(globalError -> Objects.requireNonNullElse(globalError.getDefaultMessage(), "Sin descripción")
                 )
                 .toList();
 
@@ -58,8 +57,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Errores de validación en el request: {}", reasons);
 
         return ResponseEntity
-                .status(ApiError.VALIDATION_ERROR.getStatus())
-                .body(new ErrorDto(ApiError.VALIDATION_ERROR.getMessage(), reasons));
+                .status(CommonError.VALIDATION_ERROR.getStatus())
+                .body(new ErrorDto(CommonError.VALIDATION_ERROR.getMessage(), reasons));
     }
 
     @ExceptionHandler(CasaDeDiosException.class)
@@ -74,8 +73,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorDto> handleAuthenticationErrors(RuntimeException exception) {
         log.warn("Intento de autenticación fallido: {}", exception.getMessage());
         return ResponseEntity
-                .status(ApiError.INVALID_CREDENTIALS.getStatus())
-                .body(new ErrorDto(ApiError.INVALID_CREDENTIALS.getMessage(), List.of()));
+                .status(CommonError.INVALID_CREDENTIALS.getStatus())
+                .body(new ErrorDto(CommonError.INVALID_CREDENTIALS.getMessage(), List.of()));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -87,23 +86,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Errores de validación: {}", reasons);
 
         return ResponseEntity
-                .status(ApiError.VALIDATION_ERROR.getStatus())
-                .body(new ErrorDto(ApiError.VALIDATION_ERROR.getMessage(), reasons));
+                .status(CommonError.VALIDATION_ERROR.getStatus())
+                .body(new ErrorDto(CommonError.VALIDATION_ERROR.getMessage(), reasons));
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorDto> handleIOException(IOException exception) {
+        log.error("Error al generar el archivo Excel", exception);
+        return ResponseEntity
+                .status(CommonError.EXCEL_EXPORT_ERROR.getStatus())
+                .body(new ErrorDto(CommonError.EXCEL_EXPORT_ERROR.getMessage(), List.of()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleUnexpectedException(Exception exception) {
         log.error("Error inesperado no controlado", exception);
         return ResponseEntity
-                .status(ApiError.INTERNAL_ERROR.getStatus())
-                .body(new ErrorDto(ApiError.INTERNAL_ERROR.getMessage(), List.of()));
-    }
-
-    @ExceptionHandler(IOException.class)
-    public ResponseEntity<ErrorDto> handleIOException(IOException exception) {
-        log.error("Error de I/O no controlado", exception);
-        return ResponseEntity
-                .status(ApiError.INTERNAL_ERROR.getStatus())
-                .body(new ErrorDto(ApiError.INTERNAL_ERROR.getMessage(), List.of()));
+                .status(CommonError.INTERNAL_ERROR.getStatus())
+                .body(new ErrorDto(CommonError.INTERNAL_ERROR.getMessage(), List.of()));
     }
 }

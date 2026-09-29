@@ -61,4 +61,10 @@ public class ExcelColorPalette {
     public static final XSSFColor INVERSE_PRIMARY = new XSSFColor(new byte[]{(byte) 188, (byte) 205, (byte) 155}, null);
 
     public static final XSSFColor SURFACE_TINT = new XSSFColor(new byte[]{(byte) 85, (byte) 99, (byte) 59}, null);
+
+    public static final XSSFColor SUCCESS_CONTAINER = new XSSFColor(new byte[]{(byte) 214, (byte) 240, (byte) 214}, null);
+    public static final XSSFColor ON_SUCCESS_CONTAINER = new XSSFColor(new byte[]{(byte) 20, (byte) 90, (byte) 40}, null);
+
+    public static final XSSFColor WARNING_CONTAINER = new XSSFColor(new byte[]{(byte) 255, (byte) 232, (byte) 196}, null);
+    public static final XSSFColor ON_WARNING_CONTAINER = new XSSFColor(new byte[]{(byte) 140, (byte) 90, (byte) 10}, null);
 }

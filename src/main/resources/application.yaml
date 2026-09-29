@@ -42,6 +42,10 @@ security:
     user-generator: ${USER_GENERATOR}
     expiration-minutes: ${EXPIRATION_MINUTES}
 
+springdoc:
+  swagger-ui:
+    path: /documentation
+
 cors:
   allowed-origins:
     - http://localhost:4200

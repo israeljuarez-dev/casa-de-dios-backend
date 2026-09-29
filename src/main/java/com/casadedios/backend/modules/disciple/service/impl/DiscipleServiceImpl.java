@@ -1,10 +1,9 @@
 package com.casadedios.backend.modules.disciple.service.impl;
 
+import com.casadedios.backend.common.exception.enums.CommonError;
 import com.casadedios.backend.modules.cellgroup.persistence.repository.CellGroupMemberRepository;
 import com.casadedios.backend.common.dto.response.PaginationResponseDto;
-import com.casadedios.backend.common.exception.enums.ApiError;
 import com.casadedios.backend.common.exception.model.CasaDeDiosException;
-import com.casadedios.backend.disciple.dto.request.*;
 import com.casadedios.backend.modules.disciple.dto.request.*;
 import com.casadedios.backend.modules.disciple.dto.response.DiscipleChildResponseDto;
 import com.casadedios.backend.modules.disciple.dto.response.DiscipleInviterResponseDto;
@@ -13,6 +12,7 @@ import com.casadedios.backend.modules.disciple.dto.response.DiscipleResponseDto;
 import com.casadedios.backend.modules.disciple.enums.MaritalStatus;
 import com.casadedios.backend.modules.disciple.enums.RelationshipType;
 import com.casadedios.backend.modules.disciple.enums.SpiritualLevel;
+import com.casadedios.backend.modules.disciple.exception.DiscipleErrorEnum;
 import com.casadedios.backend.modules.disciple.export.DiscipleExcelExporter;
 import com.casadedios.backend.modules.disciple.mapper.DiscipleMapper;
 import com.casadedios.backend.modules.disciple.persistence.model.Disciple;
@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -129,7 +128,7 @@ public class DiscipleServiceImpl implements DiscipleService {
     public void softDeleteById(Long id) {
         if (!discipleRepository.existsById(id)) {
             log.debug("No existe un discípulo activo con id {}, no se puede eliminar", id);
-            throw new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
+            throw new CasaDeDiosException(DiscipleErrorEnum.DISCIPLE_NOT_FOUND);
         }
 
         discipleRepository.softDeleteById(id);
@@ -155,12 +154,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         return outputStream;
     }
 
-    @Override
-    public String generateExcelFileName() {
-        return "Reporte_Discipulos_"
-                + LocalDate.now(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd"))
-                + ".xlsx";
-    }
+    /* ============================ PRIVADOS  ============================  */
 
     private List<DiscipleResponseDto> mapPageWithRelationships(List<Disciple> disciples) {
         if (disciples.isEmpty()) {
@@ -194,25 +188,6 @@ public class DiscipleServiceImpl implements DiscipleService {
         return new HashSet<>(cellGroupMemberRepository.findDiscipleIdsByDiscipleIdIn(discipleIds));
     }
 
-    /*
-    private Map<Long, List<DiscipleChildResponseDto>> fetchChildrenMap(List<Long> discipleIds) {
-        return discipleRelationshipRepository.findChildrenBySourceIds(discipleIds, RelationshipType.PARENT_CHILD.name()).stream()
-                .collect(Collectors.groupingBy(
-                        ChildProjection::getParentId,
-                        Collectors.mapping(
-                                proj -> new DiscipleChildResponseDto(
-                                        proj.getChildId(),
-                                        proj.getFirstName(),
-                                        proj.getLastName(),
-                                        GenderEnum.valueOf(proj.getGender()),
-                                        proj.getBirthDate(),
-                                        discipleDateCalculator.calculateAge(proj.getBirthDate())
-                                ),
-                                Collectors.toList()
-                        )
-                ));
-    }*/
-
     private Map<Long, List<DiscipleChildResponseDto>> fetchChildrenMap(List<Long> discipleIds) {
         return discipleRelationshipRepository
                 .findChildrenBySourceIds(discipleIds, RelationshipType.PARENT_CHILD.name())
@@ -226,25 +201,6 @@ public class DiscipleServiceImpl implements DiscipleService {
                 ));
     }
 
-    /*
-    private Map<Long, List<DiscipleParentResponseDto>> fetchParentsMap(List<Long> discipleIds) {
-        return discipleRelationshipRepository
-                .findParentsByChildIds(discipleIds, RelationshipType.PARENT_CHILD.name())
-                .stream()
-                .collect(Collectors.groupingBy(
-                        ParentProjection::getChildId,
-                        Collectors.mapping(
-                                proj -> new DiscipleParentResponseDto(
-                                        proj.getParentId(),
-                                        proj.getFirstName(),
-                                        proj.getLastName(),
-                                        GenderEnum.valueOf(proj.getGender())
-                                ),
-                                Collectors.toList()
-                        )
-                ));
-    }*/
-
     private Map<Long, List<DiscipleParentResponseDto>> fetchParentsMap(List<Long> discipleIds) {
         return discipleRelationshipRepository
                 .findParentsByChildIds(discipleIds, RelationshipType.PARENT_CHILD.name())
@@ -257,19 +213,6 @@ public class DiscipleServiceImpl implements DiscipleService {
                         )
                 ));
     }
-
-    /*
-    private Map<Long, DiscipleInviterResponseDto> fetchInvitersMap(List<Long> discipleIds) {
-        return discipleRelationshipRepository.findInvitersByTargetIds(discipleIds, RelationshipType.INVITED_BY.name()).stream()
-                .collect(Collectors.toMap(
-                        InviterProjection::getDiscipleId,
-                        proj -> new DiscipleInviterResponseDto(
-                                proj.getInviterId(),
-                                proj.getFirstName(),
-                                proj.getLastName()
-                        )
-                ));
-    }*/
 
     private Map<Long, DiscipleInviterResponseDto> fetchInvitersMap(List<Long> discipleIds) {
         return discipleRelationshipRepository
@@ -285,7 +228,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         return discipleRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> {
                     log.debug("No existe un discípulo activo con id {}", id);
-                    return new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
+                    return new CasaDeDiosException(DiscipleErrorEnum.DISCIPLE_NOT_FOUND);
                 });
     }
 
@@ -296,7 +239,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         if (requiresCouple && coupleNameMissing) {
             log.warn("Validación fallida: 'coupleName' es obligatorio cuando el estado civil es '{}'.", maritalStatus);
             throw new CasaDeDiosException(
-                    ApiError.VALIDATION_ERROR,
+                    CommonError.VALIDATION_ERROR,
                     List.of("coupleName - es obligatorio cuando el estado civil es Casado/a")
             );
         }
@@ -308,7 +251,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         if (isCellGroupLeader && !eligible) {
             log.warn("Validación fallida: 'isCellGroupLeader' no puede ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
             throw new CasaDeDiosException(
-                    ApiError.VALIDATION_ERROR,
+                    CommonError.VALIDATION_ERROR,
                     List.of("isCellGroupLeader - solo puede ser true cuando el nivel espiritual es LEADER")
             );
         }
@@ -316,7 +259,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         if (!isCellGroupLeader && eligible) {
             log.warn("Validación fallida: 'isCellGroupLeader' debe ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
             throw new CasaDeDiosException(
-                    ApiError.VALIDATION_ERROR,
+                    CommonError.VALIDATION_ERROR,
                     List.of("isCellGroupLeader - debe ser true cuando el nivel espiritual es LEADER")
             );
         }
@@ -326,7 +269,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         if (isTeacher && spiritualLevel != SpiritualLevel.LEADER) {
             log.warn("Validación fallida: 'isTeacher' no puede ser true cuando el nivel espiritual es '{}'.", spiritualLevel);
             throw new CasaDeDiosException(
-                    ApiError.VALIDATION_ERROR,
+                    CommonError.VALIDATION_ERROR,
                     List.of("isTeacher - solo puede ser true cuando el nivel espiritual es LEADER")
             );
         }
@@ -335,50 +278,16 @@ public class DiscipleServiceImpl implements DiscipleService {
     private void validateUniqueDni(String dni) {
         if (dni != null && !dni.isBlank() && discipleRepository.existsByDniAndActiveTrue(dni)) {
             log.warn("Intento de registrar un discípulo con un DNI ya existente.");
-            throw new CasaDeDiosException(ApiError.DUPLICATE_DNI);
+            throw new CasaDeDiosException(DiscipleErrorEnum.DUPLICATE_DNI);
         }
     }
 
     private void validateUniquePhoneNumber(String phoneNumber) {
         if (phoneNumber != null && !phoneNumber.isBlank() && discipleRepository.existsByPhoneNumberAndActiveTrue(phoneNumber)) {
             log.warn("Intento de registrar un discípulo con un número de teléfono ya existente.");
-            throw new CasaDeDiosException(ApiError.DUPLICATE_PHONE_NUMBER);
+            throw new CasaDeDiosException(DiscipleErrorEnum.DUPLICATE_PHONE_NUMBER);
         }
     }
-
-    /*
-    private void attachChildren(Disciple parent, List<DiscipleChildRegisterRequestDto> childrenRequest) {
-        if (childrenRequest == null || childrenRequest.isEmpty()) {
-            return;
-        }
-
-        // Construye todos los hijos primero
-        List<Disciple> children = childrenRequest.stream()
-                .map(childDto -> Disciple.builder()
-                        .firstName(childDto.firstName())
-                        .lastName(childDto.lastName())
-                        .gender(childDto.gender())
-                        .birthDate(childDto.birthDate())
-                        .maritalStatus(MaritalStatus.SINGLE)
-                        .spiritualLevel(SpiritualLevel.GUEST)
-                        .build())
-                .toList();
-
-        // Un solo batch INSERT en lugar de N inserts
-        List<Disciple> savedChildren = discipleRepository.saveAll(children);
-
-        // Construye todas las relaciones
-        List<DiscipleRelationship> relationships = savedChildren.stream()
-                .map(child -> DiscipleRelationship.builder()
-                        .sourceDisciple(parent)
-                        .targetDisciple(child)
-                        .relationshipType(RelationshipType.PARENT_CHILD)
-                        .build())
-                .toList();
-
-        // Un solo batch INSERT de relaciones
-        discipleRelationshipRepository.saveAll(relationships);
-    }*/
 
     private void attachChildren(Disciple parent, List<DiscipleChildRegisterRequestDto> childrenRequest) {
         if (childrenRequest == null || childrenRequest.isEmpty()) {
@@ -413,7 +322,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         Disciple inviter = discipleRepository.findById(invitedByDiscipleId)
                 .orElseThrow(() -> {
                     log.warn("No se encontró el discípulo invitador con id '{}'.", invitedByDiscipleId);
-                    return new CasaDeDiosException(ApiError.INVITER_NOT_FOUND);
+                    return new CasaDeDiosException(DiscipleErrorEnum.INVITER_NOT_FOUND);
                 });
 
         DiscipleRelationship relationship = DiscipleRelationship.builder()
@@ -424,57 +333,6 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         discipleRelationshipRepository.save(relationship);
     }
-
-    /*
-    private DiscipleResponseDto toResponseDtoWithRelationships(Disciple entity) {
-        List<Long> id = List.of(entity.getId());
-
-        List<DiscipleChildResponseDto> children = discipleRelationshipRepository
-                .findChildrenBySourceIds(id, RelationshipType.PARENT_CHILD.name())
-                .stream()
-                .map(proj -> new DiscipleChildResponseDto(
-                        proj.getChildId(),
-                        proj.getFirstName(),
-                        proj.getLastName(),
-                        GenderEnum.valueOf(proj.getGender()),
-                        proj.getBirthDate(),
-                        discipleDateCalculator.calculateAge(proj.getBirthDate())
-                ))
-                .toList();
-
-        DiscipleInviterResponseDto inviter = discipleRelationshipRepository
-                .findInvitersByTargetIds(id, RelationshipType.INVITED_BY.name())
-                .stream()
-                .findFirst()
-                .map(proj -> new DiscipleInviterResponseDto(
-                        proj.getInviterId(),
-                        proj.getFirstName(),
-                        proj.getLastName()
-                ))
-                .orElse(null);
-
-        List<DiscipleParentResponseDto> parents = discipleRelationshipRepository
-                .findParentsByChildIds(id, RelationshipType.PARENT_CHILD.name())
-                .stream()
-                .map(proj -> new DiscipleParentResponseDto(
-                        proj.getParentId(),
-                        proj.getFirstName(),
-                        proj.getLastName(),
-                        GenderEnum.valueOf(proj.getGender())
-                ))
-                .toList();
-
-        boolean isCellGroupMember = cellGroupMemberRepository.existsByDisciple_Id(entity.getId());
-
-        DiscipleResponseDto dto = discipleMapper.toResponseDto(entity);
-        return dto.toBuilder()
-                .children(children)
-                .hasChildren(!children.isEmpty())
-                .invitedBy(inviter)
-                .parents(parents)
-                .isCellGroupMember(isCellGroupMember)
-                .build();
-    }*/
 
     private DiscipleResponseDto toResponseDtoWithRelationships(Disciple entity) {
         List<Long> ids = List.of(entity.getId());
@@ -513,14 +371,14 @@ public class DiscipleServiceImpl implements DiscipleService {
     private void validateUniqueDniOnUpdate(String dni, Long currentId) {
         if (dni != null && !dni.isBlank() && discipleRepository.existsByDniAndIdNotAndActiveTrue(dni, currentId)) {
             log.warn("Intento de actualizar el discípulo {} con un DNI ya usado por otro registro.", currentId);
-            throw new CasaDeDiosException(ApiError.DUPLICATE_DNI);
+            throw new CasaDeDiosException(DiscipleErrorEnum.DUPLICATE_DNI);
         }
     }
 
     private void validateUniquePhoneNumberOnUpdate(String phoneNumber, Long currentId) {
         if (phoneNumber != null && !phoneNumber.isBlank() && discipleRepository.existsByPhoneNumberAndIdNotAndActiveTrue(phoneNumber, currentId)) {
             log.warn("Intento de actualizar el discípulo {} con un teléfono ya usado por otro registro.", currentId);
-            throw new CasaDeDiosException(ApiError.DUPLICATE_PHONE_NUMBER);
+            throw new CasaDeDiosException(DiscipleErrorEnum.DUPLICATE_PHONE_NUMBER);
         }
     }
 
@@ -573,7 +431,7 @@ public class DiscipleServiceImpl implements DiscipleService {
         Disciple childEntity = discipleRepository.findById(childDto.id())
                 .orElseThrow(() -> {
                     log.debug("No existe un hijo con id {} para actualizar", childDto.id());
-                    return new CasaDeDiosException(ApiError.DISCIPLE_NOT_FOUND);
+                    return new CasaDeDiosException(DiscipleErrorEnum.DISCIPLE_NOT_FOUND);
                 });
 
         if (childDto.firstName() != null) {
@@ -584,7 +442,7 @@ public class DiscipleServiceImpl implements DiscipleService {
             childEntity.setLastName(childDto.lastName());
         }
 
-        if (childDto.gender() != null) {           // AÑADIDO: actualizar género si viene en el request
+        if (childDto.gender() != null) {
             childEntity.setGender(childDto.gender());
         }
 
@@ -596,28 +454,6 @@ public class DiscipleServiceImpl implements DiscipleService {
 
         discipleRepository.save(childEntity);
     }
-
-    /*
-    private void createNewChild(Disciple parent, DiscipleChildUpdateRequestDto childDto) {
-        Disciple childEntity = Disciple.builder()
-                .firstName(childDto.firstName())
-                .lastName(childDto.lastName())
-                .gender(childDto.gender())
-                .birthDate(childDto.birthDate())
-                .maritalStatus(MaritalStatus.SINGLE)
-                .spiritualLevel(SpiritualLevel.GUEST)
-                .build();
-
-        Disciple savedChild = discipleRepository.save(childEntity);
-
-        DiscipleRelationship relationship = DiscipleRelationship.builder()
-                .sourceDisciple(parent)
-                .targetDisciple(savedChild)
-                .relationshipType(RelationshipType.PARENT_CHILD)
-                .build();
-
-        discipleRelationshipRepository.save(relationship);
-    }*/
 
     private void createNewChild(Disciple parent, DiscipleChildUpdateRequestDto childDto) {
         Disciple savedChild = discipleRepository.save(discipleMapper.childUpdateToEntity(childDto));

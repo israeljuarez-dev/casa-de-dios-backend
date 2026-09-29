@@ -1,34 +1,13 @@
-package com.casadedios.backend.common.exception.enums;
+package com.casadedios.backend.modules.cellgroup.exception;
 
+import com.casadedios.backend.common.exception.model.ApiErrorCode;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 
 @Getter
-public enum ApiError {
-    // Autenticación
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "El usuario solicitado no existe"),
-    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos"),
-    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Los datos enviados no son válidos"),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado, inténtalo más tarde"),
-    UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión primero."),
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "La sesión no es válida, vuelve a iniciar sesión"),
-    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "La sesión ha expirado, vuelve a iniciar sesión"),
-    ACCESS_DENIED(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta acción"),
-
-    // Users
-    DUPLICATE_USERNAME(HttpStatus.CONFLICT, "El nombre de usuario ya está registrado"),
-    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "El correo electrónico ya está registrado"),
-
-    // Discípulos
-    DISCIPLE_NOT_FOUND(HttpStatus.NOT_FOUND, "El discípulo solicitado no existe"),
-    DUPLICATE_NATIONAL_ID(HttpStatus.CONFLICT, "Ya existe un discípulo registrado con ese DNI"),
-    DUPLICATE_DNI(HttpStatus.CONFLICT, "Ya existe un discípulo registrado con ese DNI"),
-    DUPLICATE_PHONE_NUMBER(HttpStatus.CONFLICT, "Ya existe un discípulo registrado con ese número de celular"),
-    INVITER_NOT_FOUND(HttpStatus.NOT_FOUND, "El discípulo que registraste como invitador no existe"),
+public enum CellGroupErrorEnum implements ApiErrorCode {
     CELL_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "La célula solicitada no existe"),
-
-    // Células
     CELL_GROUP_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "El discípulo no es miembro de esta célula"),
     CELL_GROUP_MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "El discípulo ya es miembro de esta célula"),
     DISCIPLE_NOT_A_LEADER(HttpStatus.UNPROCESSABLE_CONTENT, "El discípulo debe tener nivel espiritual LEADER para dirigir una célula"),
@@ -37,7 +16,7 @@ public enum ApiError {
     DUPLICATE_CELL_GROUP_NAME(HttpStatus.CONFLICT, "Ya existe una célula registrada con ese nombre"),
     LEADER_CANNOT_BE_OWN_CELL_MEMBER(HttpStatus.UNPROCESSABLE_CONTENT, "El líder de la célula no puede ser miembro de su propia célula"),
     DISCIPLE_ALREADY_IN_ANOTHER_CELL(HttpStatus.CONFLICT, "El discípulo ya pertenece a otra célula"),
-    PASTOR_CORE_TWELVE_CANNOT_BE_CELL_MEMBER(HttpStatus.CONFLICT, "Un discípulo de Los 12 del pastor no puede ser miembro regular de una célula"),
+    PASTOR_CORE_TWELVE_CANNOT_BE_CELL_MEMBER(HttpStatus.CONFLICT, "Un discípulo de Los 12 del pastor no puede ser miembro regular de una célula"), // sin uso detectado
     PASTOR_GENDER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "Ya existe un pastor registrado con ese género"),
     PASTOR_CELL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "Ya existen las dos células principales del pastor y la pastora"),
     PASTOR_CELL_GENDER_MISMATCH(HttpStatus.UNPROCESSABLE_CONTENT, "La célula del pastor solo acepta hombres y la de la pastora solo mujeres"),
@@ -52,7 +31,7 @@ public enum ApiError {
 
     private final String message;
 
-    ApiError(HttpStatus status, String message) {
+    CellGroupErrorEnum(HttpStatus status, String message) {
         this.status = status;
         this.message = message;
     }

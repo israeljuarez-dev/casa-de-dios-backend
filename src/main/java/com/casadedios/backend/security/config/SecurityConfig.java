@@ -3,9 +3,12 @@ package com.casadedios.backend.security.config;
 import com.casadedios.backend.common.config.CorsProperties;
 import com.casadedios.backend.security.jwt.filter.JwtAuthenticationFilter;
 import com.casadedios.backend.security.jwt.utils.JwtUtils;
+import com.casadedios.backend.security.response.RestAccessDeniedHandler;
+import com.casadedios.backend.security.response.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -34,6 +37,10 @@ public class SecurityConfig {
 
     private final CorsProperties corsProperties;
 
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         return httpSecurity
@@ -45,6 +52,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/documentation").permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler)
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtils), BasicAuthenticationFilter.class)
                 .build();
     }
@@ -55,6 +66,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(corsProperties.allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

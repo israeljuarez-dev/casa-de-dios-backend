@@ -1,6 +1,5 @@
 package com.casadedios.backend.modules.cellgroup.service;
 
-import com.casadedios.backend.cellgroup.dto.request.*;
 import com.casadedios.backend.modules.cellgroup.dto.request.*;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupMemberResponseDto;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupResponseDto;
@@ -23,8 +22,6 @@ public interface CellGroupService {
     void deleteById(Long id);
 
     // Miembros
-    // List<CellGroupMemberResponseDto> findMembers(Long cellGroupId);
-
     List<CellGroupMemberResponseDto> findMembers(Long cellGroupId, CellGroupMemberSearchCriteriaDto criteria);
 
     CellGroupMemberResponseDto addMember(Long cellGroupId, CellGroupMemberRequestDto request);
@@ -44,6 +41,4 @@ public interface CellGroupService {
 
     // Export
     ByteArrayOutputStream exportToExcel(CellGroupSearchCriteriaDto criteria) throws IOException;
-
-    String generateExcelFileName();
 }
