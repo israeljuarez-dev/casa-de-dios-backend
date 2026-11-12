@@ -2,7 +2,6 @@ package com.casadedios.backend.modules.retreat.controller;
 
 import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
 import com.casadedios.backend.common.export.response.ExcelResponseFactory;
-import com.casadedios.backend.modules.retreat.controller.documentation.RetreatControllerDocumentation;
 import com.casadedios.backend.modules.retreat.dto.request.*;
 import com.casadedios.backend.modules.retreat.dto.response.*;
 import com.casadedios.backend.modules.retreat.service.RetreatService;
@@ -21,14 +20,13 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/retreats")
-public class RetreatController implements RetreatControllerDocumentation {
+public class RetreatController {
 
     private final RetreatService retreatService;
 
     private final ExcelResponseFactory excelResponseFactory;
 
     @GetMapping
-    @Override
     public ResponseEntity<ApiResponseBodyDto<PaginationResponseDto<RetreatResponseDto>>> findAll(
             @ModelAttribute RetreatSearchCriteriaDto criteria
     ) {
@@ -37,15 +35,15 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @GetMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<RetreatResponseDto>> findById(@PathVariable("id") @Min(1) Long id) {
         RetreatResponseDto result = retreatService.findById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Encuentro encontrado", result));
     }
 
     @PostMapping
-    @Override
-    public ResponseEntity<ApiResponseBodyDto<RetreatResponseDto>> create(@RequestBody @Valid RetreatRegisterRequestDto request) {
+    public ResponseEntity<ApiResponseBodyDto<RetreatResponseDto>> create(
+            @RequestBody @Valid RetreatRegisterRequestDto request
+    ) {
         RetreatResponseDto created = retreatService.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -53,7 +51,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @PutMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<RetreatResponseDto>> update(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid RetreatUpdateRequestDto request
@@ -63,14 +60,12 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @DeleteMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> deleteById(@PathVariable("id") @Min(1) Long id) {
         retreatService.deleteById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Encuentro eliminado exitosamente", null));
     }
 
     @GetMapping("/{id}/enrollments")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<List<RetreatEnrollmentResponseDto>>> findEnrolledDisciples(
             @PathVariable("id") @Min(1) Long id,
             @ModelAttribute RetreatEnrollmentSearchCriteriaDto criteria
@@ -80,7 +75,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @PostMapping("/{id}/enrollments")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<List<RetreatEnrollmentResponseDto>>> enrollDisciples(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid RetreatEnrollmentRequestDto request
@@ -92,7 +86,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @PostMapping("/{id}/enrollments/disciples/remove")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> removeEnrolledDisciples(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid RemoveEnrolledDisciplesRequestDto request
@@ -102,7 +95,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @PatchMapping("/{id}/enrollments/disciples/{discipleId}/payment")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<RetreatEnrollmentResponseDto>> registerPayment(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId,
@@ -113,7 +105,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @GetMapping("/{id}/enrollments/disciples")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<RetreatWithEnrollmentsResponseDto>> findRetreatWithEnrolledDisciples(
             @PathVariable("id") @Min(1) Long id
     ) {
@@ -122,14 +113,14 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @GetMapping("/{id}/staffs")
-    @Override
-    public ResponseEntity<ApiResponseBodyDto<List<RetreatStaffResponseDto>>> findStaff(@PathVariable("id") @Min(1) Long id) {
+    public ResponseEntity<ApiResponseBodyDto<List<RetreatStaffResponseDto>>> findStaff(
+            @PathVariable("id") @Min(1) Long id
+    ) {
         List<RetreatStaffResponseDto> result = retreatService.findStaff(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Staff obtenido exitosamente", result));
     }
 
     @PostMapping("/{id}/staffs")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<List<RetreatStaffResponseDto>>> addStaff(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid RetreatStaffRequestDto request
@@ -141,7 +132,6 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @PostMapping("/{id}/staffs/remove")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> removeStaff(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid RemoveStaffRequestDto request
@@ -151,25 +141,21 @@ public class RetreatController implements RetreatControllerDocumentation {
     }
 
     @GetMapping("/{id}/export/excel")
-    @Override
     public ResponseEntity<byte[]> exportFullReport(@PathVariable("id") @Min(1) Long id) throws IOException {
         return excelResponseFactory.build(retreatService.exportFullReport(id), "Reporte_Encuentro_" + id + ".xlsx");
     }
 
     @GetMapping("/{id}/export/excel/attendees")
-    @Override
     public ResponseEntity<byte[]> exportAttendees(@PathVariable("id") @Min(1) Long id) throws IOException {
         return excelResponseFactory.build(retreatService.exportAttendees(id), "Asistentes_Encuentro_" + id + ".xlsx");
     }
 
     @GetMapping("/{id}/export/excel/attendees-payments")
-    @Override
     public ResponseEntity<byte[]> exportAttendeesWithPayments(@PathVariable("id") @Min(1) Long id) throws IOException {
         return excelResponseFactory.build(retreatService.exportAttendeesWithPayments(id), "Asistentes_Pagos_Encuentro_" + id + ".xlsx");
     }
 
     @GetMapping("/{id}/export/excel/staffs")
-    @Override
     public ResponseEntity<byte[]> exportStaff(@PathVariable("id") @Min(1) Long id) throws IOException {
         return excelResponseFactory.build(retreatService.exportStaff(id), "Staff_Encuentro_" + id + ".xlsx");
     }

@@ -1,0 +1,21 @@
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  flyway:
+    enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+security:
+  jwt:
+    private-key: test-only-secret-key-must-be-at-least-32-bytes
+    user-generator: casa-de-dios-test
+    expiration-minutes: 60

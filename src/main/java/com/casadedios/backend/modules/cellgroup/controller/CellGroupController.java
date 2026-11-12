@@ -2,7 +2,6 @@ package com.casadedios.backend.modules.cellgroup.controller;
 
 import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
 import com.casadedios.backend.common.export.response.ExcelResponseFactory;
-import com.casadedios.backend.modules.cellgroup.controller.documentation.CellGroupControllerDocumentation;
 import com.casadedios.backend.modules.cellgroup.dto.request.*;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupMemberResponseDto;
 import com.casadedios.backend.modules.cellgroup.dto.response.CellGroupResponseDto;
@@ -24,14 +23,13 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/cell-groups")
-public class CellGroupController implements CellGroupControllerDocumentation {
+public class CellGroupController {
 
     private final CellGroupService cellGroupService;
 
     private final ExcelResponseFactory excelResponseFactory;
 
     @GetMapping
-    @Override
     public ResponseEntity<ApiResponseBodyDto<PaginationResponseDto<CellGroupResponseDto>>> findAll(
             @ModelAttribute CellGroupSearchCriteriaDto criteria
     ) {
@@ -40,15 +38,15 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @GetMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<CellGroupResponseDto>> findById(@PathVariable("id") @Min(1) Long id) {
         CellGroupResponseDto result = cellGroupService.findById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Célula encontrada", result));
     }
 
     @PostMapping
-    @Override
-    public ResponseEntity<ApiResponseBodyDto<CellGroupResponseDto>> create(@RequestBody @Valid CellGroupRegisterRequestDto request) {
+    public ResponseEntity<ApiResponseBodyDto<CellGroupResponseDto>> create(
+            @RequestBody @Valid CellGroupRegisterRequestDto request
+    ) {
         CellGroupResponseDto created = cellGroupService.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -56,7 +54,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @PutMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<CellGroupResponseDto>> update(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid CellGroupUpdateRequestDto request
@@ -66,14 +63,12 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @DeleteMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> deleteById(@PathVariable("id") @Min(1) Long id) {
         cellGroupService.deleteById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Célula eliminada exitosamente", null));
     }
 
     @GetMapping("/{id}/members")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<List<CellGroupMemberResponseDto>>> findMembers(
             @PathVariable("id") @Min(1) Long id,
             @ModelAttribute CellGroupMemberSearchCriteriaDto criteria
@@ -83,7 +78,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @PostMapping("/{id}/members")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<CellGroupMemberResponseDto>> addMember(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid CellGroupMemberRequestDto request
@@ -95,7 +89,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @DeleteMapping("/{id}/members/{discipleId}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> removeMember(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId
@@ -105,7 +98,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @PatchMapping("/{id}/members/{discipleId}/core-twelve")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<CellGroupMemberResponseDto>> markAsCoreTwelve(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId
@@ -115,7 +107,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @DeleteMapping("/{id}/members/{discipleId}/core-twelve")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> unmarkAsCoreTwelve(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId
@@ -125,7 +116,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @PatchMapping("/{id}/members/{discipleId}/pastor-core-twelve")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<CellGroupMemberResponseDto>> markAsPastorCoreTwelve(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId
@@ -135,7 +125,6 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @DeleteMapping("/{id}/members/{discipleId}/pastor-core-twelve")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> unmarkAsPastorCoreTwelve(
             @PathVariable("id") @Min(1) Long id,
             @PathVariable("discipleId") @Min(1) Long discipleId
@@ -145,14 +134,12 @@ public class CellGroupController implements CellGroupControllerDocumentation {
     }
 
     @GetMapping("/pastor-core-twelve")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<List<CellGroupMemberResponseDto>>> findPastorCoreTwelve() {
         List<CellGroupMemberResponseDto> result = cellGroupService.findPastorCoreTwelve();
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Los 12 del pastor obtenidos exitosamente", result));
     }
 
     @GetMapping("/export/excel")
-    @Override
     public ResponseEntity<byte[]> exportToExcel(@ModelAttribute CellGroupSearchCriteriaDto criteria) throws IOException{
         ByteArrayOutputStream outputStream = cellGroupService.exportToExcel(criteria);
         String fileName = excelResponseFactory.fileNameWithDate("Reporte_Celulas");

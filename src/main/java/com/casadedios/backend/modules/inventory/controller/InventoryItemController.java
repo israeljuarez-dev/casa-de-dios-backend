@@ -3,7 +3,6 @@ package com.casadedios.backend.modules.inventory.controller;
 import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
 import com.casadedios.backend.common.dto.response.PaginationResponseDto;
 import com.casadedios.backend.common.export.response.ExcelResponseFactory;
-import com.casadedios.backend.modules.inventory.controller.documentation.InventoryItemControllerDocumentation;
 import com.casadedios.backend.modules.inventory.dto.request.InventoryItemRegisterRequestDto;
 import com.casadedios.backend.modules.inventory.dto.request.InventoryItemSearchCriteriaDto;
 import com.casadedios.backend.modules.inventory.dto.request.InventoryItemStockAdjustmentRequestDto;
@@ -25,14 +24,13 @@ import java.io.IOException;
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/inventory-items")
-public class InventoryItemController implements InventoryItemControllerDocumentation {
+public class InventoryItemController {
 
     private final InventoryItemService inventoryItemService;
 
     private final ExcelResponseFactory excelResponseFactory;
 
     @GetMapping
-    @Override
     public ResponseEntity<ApiResponseBodyDto<PaginationResponseDto<InventoryItemResponseDto>>> findAll(
             @ModelAttribute InventoryItemSearchCriteriaDto criteria
     ) {
@@ -41,14 +39,12 @@ public class InventoryItemController implements InventoryItemControllerDocumenta
     }
 
     @GetMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<InventoryItemResponseDto>> findById(@PathVariable("id") @Min(1) Long id) {
         InventoryItemResponseDto result = inventoryItemService.findById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Ítem de inventario encontrado", result));
     }
 
     @PostMapping
-    @Override
     public ResponseEntity<ApiResponseBodyDto<InventoryItemResponseDto>> create(
             @RequestBody @Valid InventoryItemRegisterRequestDto request
     ) {
@@ -59,7 +55,6 @@ public class InventoryItemController implements InventoryItemControllerDocumenta
     }
 
     @PutMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<InventoryItemResponseDto>> update(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid InventoryItemUpdateRequestDto request
@@ -69,14 +64,12 @@ public class InventoryItemController implements InventoryItemControllerDocumenta
     }
 
     @DeleteMapping("/{id}")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<Void>> deleteById(@PathVariable("id") @Min(1) Long id) {
         inventoryItemService.deleteById(id);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Ítem de inventario eliminado exitosamente", null));
     }
 
     @PatchMapping("/{id}/stock")
-    @Override
     public ResponseEntity<ApiResponseBodyDto<InventoryItemResponseDto>> adjustStock(
             @PathVariable("id") @Min(1) Long id,
             @RequestBody @Valid InventoryItemStockAdjustmentRequestDto request
@@ -86,8 +79,9 @@ public class InventoryItemController implements InventoryItemControllerDocumenta
     }
 
     @GetMapping("/export/excel")
-    @Override
-    public ResponseEntity<byte[]> exportToExcel(@ModelAttribute InventoryItemSearchCriteriaDto criteria) throws IOException {
+    public ResponseEntity<byte[]> exportToExcel(
+            @ModelAttribute InventoryItemSearchCriteriaDto criteria
+    ) throws IOException {
         ByteArrayOutputStream outputStream = inventoryItemService.exportToExcel(criteria);
         String fileName = excelResponseFactory.fileNameWithDate("Reporte_Inventario");
         return excelResponseFactory.build(outputStream, fileName);

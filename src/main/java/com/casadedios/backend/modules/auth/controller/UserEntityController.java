@@ -1,12 +1,10 @@
 package com.casadedios.backend.modules.auth.controller;
 
 import com.casadedios.backend.common.dto.response.ApiResponseBodyDto;
-import com.casadedios.backend.modules.auth.controller.documentation.UserEntityControllerDocumentation;
 import com.casadedios.backend.modules.auth.dto.request.AuthUserRegisterRequestDto;
 import com.casadedios.backend.modules.auth.dto.response.AuthUserEntityProfileResponseDto;
 import com.casadedios.backend.modules.auth.dto.response.AuthUserRegisterResponseDto;
 import com.casadedios.backend.modules.auth.service.UserEntityService;
-import com.casadedios.backend.common.dto.response.ApiResponseDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,13 +17,14 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/auth")
-public class UserEntityController implements UserEntityControllerDocumentation {
+public class UserEntityController{
 
     private final UserEntityService userEntityService;
 
     @PostMapping("/register")
-    @Override
-    public ResponseEntity<ApiResponseBodyDto<AuthUserRegisterResponseDto>> register(@RequestBody @Valid AuthUserRegisterRequestDto request) {
+    public ResponseEntity<ApiResponseBodyDto<AuthUserRegisterResponseDto>> register(
+            @RequestBody @Valid AuthUserRegisterRequestDto request
+    ) {
         AuthUserRegisterResponseDto result = userEntityService.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -33,8 +32,9 @@ public class UserEntityController implements UserEntityControllerDocumentation {
     }
 
     @GetMapping("/me")
-    @Override
-    public ResponseEntity<ApiResponseBodyDto<AuthUserEntityProfileResponseDto>> me(@AuthenticationPrincipal String username) {
+    public ResponseEntity<ApiResponseBodyDto<AuthUserEntityProfileResponseDto>> me(
+            @AuthenticationPrincipal String username
+    ) {
         AuthUserEntityProfileResponseDto profile = userEntityService.findCurrentUser(username);
         return ResponseEntity.ok(new ApiResponseBodyDto<>("Perfil del usuario autenticado", profile));
     }

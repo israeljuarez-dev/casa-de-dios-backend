@@ -1,0 +1,1589 @@
+openapi: 3.0.3
+info:
+  title: Casa de Dios - API
+  description: >-
+    Sistema de gestión de discípulos de la Iglesia Casa de Dios.
+    Contrato contract-first de los módulos auth, disciple, cellgroup, inventory y retreat.
+  version: "1.0"
+servers:
+  - url: /v1
+    description: Context-path del backend (server.servlet.context-path)
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+    description: Autenticación y perfil de los pastores
+  - name: Disciples
+    description: Gestión de discípulos
+  - name: Cell Groups
+    description: Células, miembros y Los 12
+  - name: Inventory
+    description: Inventario de bienes de la iglesia
+  - name: Retreats
+    description: Encuentros, inscripciones, pagos y staff
+
+paths:
+  # =========================================================================
+  # AUTH
+  # =========================================================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Iniciar sesión
+      security: []
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AuthLoginRequestDto'}}}}
+      responses:
+        '200': {description: Inicio de sesión exitoso, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseAuthLoginResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {description: Usuario o contraseña incorrectos, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Registrar usuario (pastor o pastora)
+      description: Solo puede existir un usuario MALE y uno FEMALE. El rol siempre es PASTOR.
+      security: []
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AuthUserRegisterRequestDto'}}}}
+      responses:
+        '201': {description: Usuario registrado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseAuthUserRegisterResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {description: 'El nombre de usuario ya está registrado | El correo electrónico ya está registrado | Ya existe un pastor registrado con ese género', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: me
+      summary: Obtener perfil del usuario autenticado
+      responses:
+        '200': {description: Perfil del usuario autenticado, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseAuthUserEntityProfileResponseDto'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El usuario solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  # =========================================================================
+  # DISCIPLES
+  # =========================================================================
+  /disciples:
+    get:
+      tags: [Disciples]
+      operationId: findAllDisciples
+      summary: Listar discípulos (paginado con filtros)
+      description: Retorna solo discípulos activos.
+      parameters:
+        - $ref: '#/components/parameters/DiscipleSearch'
+        - $ref: '#/components/parameters/DiscipleFirstName'
+        - $ref: '#/components/parameters/DiscipleLastName'
+        - $ref: '#/components/parameters/DiscipleGender'
+        - $ref: '#/components/parameters/DiscipleSpiritualLevel'
+        - $ref: '#/components/parameters/DiscipleMaritalStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortField'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200': {description: Listado obtenido exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseDisciplePage'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Disciples]
+      operationId: createDisciple
+      summary: Registrar discípulo
+      description: >-
+        Los hijos se registran como discípulos independientes vinculados al padre o madre.
+        Las reglas de negocio incumplidas responden 400 (ver descripción de DiscipleRegisterRequestDto).
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DiscipleRegisterRequestDto'}}}}
+      responses:
+        '201': {description: Discípulo registrado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseDiscipleResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo que registraste como invitador no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: 'Ya existe un discípulo registrado con ese DNI | Ya existe un discípulo registrado con ese número de celular', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /disciples/{id}:
+    get:
+      tags: [Disciples]
+      operationId: findDiscipleById
+      summary: Obtener discípulo por ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Discípulo encontrado, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseDiscipleResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    put:
+      tags: [Disciples]
+      operationId: updateDisciple
+      summary: Actualizar discípulo
+      description: >-
+        Solo se actualizan los campos enviados. Si `children` se envía, es la lista final de hijos:
+        con `id` se actualiza, sin `id` se crea y los hijos existentes que no aparecen se eliminan
+        definitivamente. Si `children` no se envía, los hijos no se modifican.
+        El invitador no se puede modificar.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DiscipleUpdateRequestDto'}}}}
+      responses:
+        '200': {description: Discípulo actualizado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseDiscipleResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: 'Ya existe un discípulo registrado con ese DNI | Ya existe un discípulo registrado con ese número de celular', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Disciples]
+      operationId: softDeleteDiscipleById
+      summary: Eliminar discípulo (borrado lógico)
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Discípulo eliminado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /disciples/export/excel:
+    get:
+      tags: [Disciples]
+      operationId: exportDisciplesToExcel
+      summary: Exportar discípulos a Excel
+      description: >-
+        Exporta todos los discípulos que cumplan los filtros (la paginación se ignora).
+        Archivo `Reporte_Discipulos_yyyy-MM-dd.xlsx`, hoja "Discípulos". Columnas: N°, Nombres, Apellidos,
+        Fecha Nacimiento, Edad, Profesión, Teléfono, Dirección, DNI, Estado Civil, Pareja/Cónyuge, Nivel Espiritual.
+      parameters:
+        - $ref: '#/components/parameters/DiscipleSearch'
+        - $ref: '#/components/parameters/DiscipleFirstName'
+        - $ref: '#/components/parameters/DiscipleLastName'
+        - $ref: '#/components/parameters/DiscipleGender'
+        - $ref: '#/components/parameters/DiscipleSpiritualLevel'
+        - $ref: '#/components/parameters/DiscipleMaritalStatus'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  # =========================================================================
+  # CELL GROUPS
+  # =========================================================================
+  /cell-groups:
+    get:
+      tags: [Cell Groups]
+      operationId: findAllCellGroups
+      summary: Listar células (paginado con filtros)
+      parameters:
+        - $ref: '#/components/parameters/CellGroupName'
+        - $ref: '#/components/parameters/CellGroupLeaderName'
+        - $ref: '#/components/parameters/CellGroupMeetingDay'
+        - $ref: '#/components/parameters/CellGroupIsPastorCell'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortField'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200': {description: Listado obtenido exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupPage'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Cell Groups]
+      operationId: createCellGroup
+      summary: Registrar célula (regular o principal)
+      description: >-
+        Célula regular (`isPastorCell=false`): `leaderDiscipleId` obligatorio y el líder debe ser LEADER.
+        Célula principal (`isPastorCell=true`): `pastorCellGender` obligatorio, sin líder; máximo una por género.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CellGroupRegisterRequestDto'}}}}
+      responses:
+        '201': {description: Célula registrada exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: 'Ya existe una célula registrada con ese nombre | Ya existen las dos células principales del pastor y la pastora | Ya existe una célula principal registrada para ese género', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: 'El discípulo debe tener nivel espiritual LEADER para dirigir una célula | Las células principales requieren especificar el género (MALE para el pastor, FEMALE para la pastora)', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/{id}:
+    get:
+      tags: [Cell Groups]
+      operationId: findCellGroupById
+      summary: Obtener célula por ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Célula encontrada, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: La célula solicitada no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    put:
+      tags: [Cell Groups]
+      operationId: updateCellGroup
+      summary: Actualizar célula
+      description: >-
+        Todos los campos son opcionales. Si se envía `leaderDiscipleId`, el nuevo líder debe ser LEADER y, si su
+        `isCellGroupLeader` era false, se actualiza a true. `pastorCellGender` no se puede modificar.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CellGroupUpdateRequestDto'}}}}
+      responses:
+        '200': {description: Célula actualizada exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo solicitado no existe', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: Ya existe una célula registrada con ese nombre, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: El discípulo debe tener nivel espiritual LEADER para dirigir una célula, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Cell Groups]
+      operationId: deleteCellGroupById
+      summary: Eliminar célula
+      description: Eliminación definitiva; elimina también las membresías de la célula.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Célula eliminada exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: La célula solicitada no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/{id}/members:
+    get:
+      tags: [Cell Groups]
+      operationId: findCellGroupMembers
+      summary: Listar miembros de una célula
+      description: Sin paginación. Ordenado por apellido y nombre. Solo discípulos activos.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - {name: search, in: query, description: 'Búsqueda parcial por nombre, apellido o "nombre apellido"', schema: {type: string}}
+        - {name: spiritualLevel, in: query, description: Filtro exacto, schema: {$ref: '#/components/schemas/SpiritualLevel'}}
+        - {name: gender, in: query, description: Filtro exacto, schema: {$ref: '#/components/schemas/GenderEnum'}}
+      responses:
+        '200': {description: Miembros obtenidos exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupMemberList'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: La célula solicitada no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Cell Groups]
+      operationId: addCellGroupMember
+      summary: Añadir discípulo a una célula
+      description: En una célula principal el discípulo queda marcado automáticamente como Los 12 del líder y del pastor.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CellGroupMemberRequestDto'}}}}
+      responses:
+        '201': {description: Discípulo añadido a la célula, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupMemberResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo solicitado no existe', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: 'El discípulo ya pertenece a otra célula | La célula principal ya alcanzó el límite de 12 miembros', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: 'El líder de la célula no puede ser miembro de su propia célula | Solo discípulos con nivel LEADER pueden ser miembros de la célula principal | La célula del pastor solo acepta hombres y la de la pastora solo mujeres', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/{id}/members/{discipleId}:
+    delete:
+      tags: [Cell Groups]
+      operationId: removeCellGroupMember
+      summary: Remover discípulo de una célula
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      responses:
+        '200': {description: Discípulo removido de la célula, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo no es miembro de esta célula', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/{id}/members/{discipleId}/core-twelve:
+    patch:
+      tags: [Cell Groups]
+      operationId: markAsCoreTwelve
+      summary: Marcar discípulo como Los 12 del líder
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      responses:
+        '200': {description: Discípulo marcado como Los 12, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupMemberResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo no es miembro de esta célula', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Cell Groups]
+      operationId: unmarkAsCoreTwelve
+      summary: Desmarcar discípulo de Los 12 del líder
+      description: También lo desmarca de Los 12 del pastor.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      responses:
+        '200': {description: Discípulo removido de Los 12, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo no es miembro de esta célula', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/{id}/members/{discipleId}/pastor-core-twelve:
+    patch:
+      tags: [Cell Groups]
+      operationId: markAsPastorCoreTwelve
+      summary: Marcar discípulo como Los 12 del pastor
+      description: También lo marca como Los 12 del líder. Solo líderes de célula pueden ser Los 12 del pastor.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      responses:
+        '200': {description: Discípulo marcado como Los 12 del pastor, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupMemberResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo no es miembro de esta célula', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: Ya se alcanzó el límite de 12 discípulos del pastor en toda la iglesia, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: Solo los líderes de célula pueden formar parte de Los 12 del pastor, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Cell Groups]
+      operationId: unmarkAsPastorCoreTwelve
+      summary: Desmarcar discípulo de Los 12 del pastor
+      description: Solo quita la marca del pastor; sigue siendo Los 12 del líder.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      responses:
+        '200': {description: Discípulo removido de Los 12 del pastor, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'La célula solicitada no existe | El discípulo no es miembro de esta célula', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/pastor-core-twelve:
+    get:
+      tags: [Cell Groups]
+      operationId: findPastorCoreTwelve
+      summary: Listar Los 12 del pastor
+      description: Todos los discípulos con isPastorCoreTwelve = true, sin paginación, ordenados por apellido y nombre.
+      responses:
+        '200': {description: Los 12 del pastor obtenidos exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseCellGroupMemberList'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /cell-groups/export/excel:
+    get:
+      tags: [Cell Groups]
+      operationId: exportCellGroupsToExcel
+      summary: Exportar células a Excel
+      description: >-
+        Exporta todas las células que cumplan los filtros (la paginación se ignora).
+        Archivo `Reporte_Celulas_yyyy-MM-dd.xlsx`, hoja "Células". Columnas: N°, Nombre Célula, Líder,
+        Día de Reunión, Hora de Reunión, Lugar, Total Miembros.
+      parameters:
+        - $ref: '#/components/parameters/CellGroupName'
+        - $ref: '#/components/parameters/CellGroupLeaderName'
+        - $ref: '#/components/parameters/CellGroupMeetingDay'
+        - $ref: '#/components/parameters/CellGroupIsPastorCell'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  # =========================================================================
+  # INVENTORY
+  # =========================================================================
+  /inventory-items:
+    get:
+      tags: [Inventory]
+      operationId: findAllInventoryItems
+      summary: Listar ítems de inventario (paginado con filtros)
+      description: Búsquedas parciales sin distinguir mayúsculas ni tildes. Orden por defecto, `name`.
+      parameters:
+        - $ref: '#/components/parameters/InventoryName'
+        - $ref: '#/components/parameters/InventoryCategory'
+        - $ref: '#/components/parameters/InventorySourceType'
+        - $ref: '#/components/parameters/InventoryDonorName'
+        - $ref: '#/components/parameters/InventoryRegisteredFrom'
+        - $ref: '#/components/parameters/InventoryRegisteredTo'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/InventorySortField'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200': {description: Listado obtenido exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseInventoryItemPage'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Inventory]
+      operationId: createInventoryItem
+      summary: Registrar ítem de inventario
+      description: >-
+        Si `sourceType` = DONATED, `donorDiscipleId` es obligatorio. Si es PURCHASED, el donante se ignora.
+        Si `registeredAt` no se envía, se usa la fecha actual (America/Lima).
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/InventoryItemRegisterRequestDto'}}}}
+      responses:
+        '201': {description: Ítem de inventario registrado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseInventoryItemResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El discípulo solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: Los ítems donados requieren especificar el discípulo donante, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /inventory-items/{id}:
+    get:
+      tags: [Inventory]
+      operationId: findInventoryItemById
+      summary: Obtener ítem de inventario por ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Ítem de inventario encontrado, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseInventoryItemResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El ítem de inventario solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    put:
+      tags: [Inventory]
+      operationId: updateInventoryItem
+      summary: Actualizar ítem de inventario
+      description: >-
+        Todos los campos son opcionales. La cantidad no se modifica por aquí, usar `PATCH /inventory-items/{id}/stock`.
+        La regla de origen/donante se evalúa con los valores finales (enviados o actuales).
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/InventoryItemUpdateRequestDto'}}}}
+      responses:
+        '200': {description: Ítem de inventario actualizado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseInventoryItemResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'El ítem de inventario solicitado no existe | El discípulo solicitado no existe', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: Los ítems donados requieren especificar el discípulo donante, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Inventory]
+      operationId: deleteInventoryItemById
+      summary: Eliminar ítem de inventario
+      description: Eliminación definitiva.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Ítem de inventario eliminado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El ítem de inventario solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /inventory-items/{id}/stock:
+    patch:
+      tags: [Inventory]
+      operationId: adjustInventoryItemStock
+      summary: Ajustar stock (ingreso o salida)
+      description: INCREASE suma la cantidad y DECREASE la resta. El stock nunca puede quedar negativo.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/InventoryItemStockAdjustmentRequestDto'}}}}
+      responses:
+        '200': {description: Stock ajustado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseInventoryItemResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El ítem de inventario solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: No hay stock suficiente para realizar la salida solicitada, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /inventory-items/export/excel:
+    get:
+      tags: [Inventory]
+      operationId: exportInventoryItemsToExcel
+      summary: Exportar inventario a Excel
+      description: >-
+        Exporta todos los ítems que cumplan los filtros respetando el orden solicitado (la paginación se ignora).
+        Archivo `Reporte_Inventario_yyyy-MM-dd.xlsx`, hoja "Inventario". Columnas: N°, Nombre, Descripción,
+        Categoría, Cantidad, Costo Unitario, Origen, Donante, Fecha de Registro.
+      parameters:
+        - $ref: '#/components/parameters/InventoryName'
+        - $ref: '#/components/parameters/InventoryCategory'
+        - $ref: '#/components/parameters/InventorySourceType'
+        - $ref: '#/components/parameters/InventoryDonorName'
+        - $ref: '#/components/parameters/InventoryRegisteredFrom'
+        - $ref: '#/components/parameters/InventoryRegisteredTo'
+        - $ref: '#/components/parameters/InventorySortField'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  # =========================================================================
+  # RETREATS
+  # =========================================================================
+  /retreats:
+    get:
+      tags: [Retreats]
+      operationId: findAllRetreats
+      summary: Listar encuentros (paginado con filtros)
+      parameters:
+        - {name: name, in: query, description: Búsqueda parcial por nombre, schema: {type: string}}
+        - {name: location, in: query, description: Búsqueda parcial por lugar, schema: {type: string}}
+        - {name: startDateFrom, in: query, description: Fecha de inicio mínima (ISO-8601 UTC), schema: {type: string, format: date-time}}
+        - {name: startDateTo, in: query, description: Fecha de inicio máxima (ISO-8601 UTC), schema: {type: string, format: date-time}}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortField'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200': {description: Listado obtenido exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatPage'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Retreats]
+      operationId: createRetreat
+      summary: Registrar encuentro
+      description: Sin límite de discípulos inscritos. `endDate` debe ser posterior a `startDate`.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetreatRegisterRequestDto'}}}}
+      responses:
+        '201': {description: Encuentro registrado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}:
+    get:
+      tags: [Retreats]
+      operationId: findRetreatById
+      summary: Obtener encuentro por ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Encuentro encontrado, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    put:
+      tags: [Retreats]
+      operationId: updateRetreat
+      summary: Actualizar encuentro
+      description: >-
+        Todos los campos son opcionales. Si se envía `startDate` o `endDate`, el rango resultante debe ser válido y
+        las fechas deben estar en el futuro.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetreatUpdateRequestDto'}}}}
+      responses:
+        '200': {description: Encuentro actualizado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: 'La fecha de fin debe ser posterior a la fecha de inicio | Las fechas del encuentro deben ser en el futuro', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [Retreats]
+      operationId: deleteRetreatById
+      summary: Eliminar encuentro
+      description: Eliminación definitiva; elimina también inscripciones y staff del encuentro.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Encuentro eliminado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/enrollments:
+    get:
+      tags: [Retreats]
+      operationId: findRetreatEnrolledDisciples
+      summary: Listar asistentes inscritos
+      description: Sin paginación.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - {name: search, in: query, description: 'Búsqueda parcial por nombre o apellido', schema: {type: string}}
+        - {name: paymentStatus, in: query, description: Filtro por estado de pago, schema: {$ref: '#/components/schemas/PaymentStatusEnum'}}
+      responses:
+        '200': {description: Asistentes obtenidos exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatEnrollmentList'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Retreats]
+      operationId: enrollRetreatDisciples
+      summary: Inscribir discípulos al encuentro
+      description: >-
+        Inscribe uno o varios discípulos. Es todo o nada: si uno falla, no se inscribe ninguno.
+        Cada inscripción inicia con paymentStatus = PENDING y amountPaid = 0.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetreatEnrollmentRequestDto'}}}}
+      responses:
+        '201': {description: Discípulo(s) inscrito(s) exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatEnrollmentList'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'El encuentro solicitado no existe | El discípulo solicitado no existe', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: El discípulo ya está inscrito en este encuentro, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/enrollments/disciples/remove:
+    post:
+      tags: [Retreats]
+      operationId: removeRetreatEnrolledDisciples
+      summary: Remover discípulos inscritos
+      description: Se usa POST con body para poder quitar varios discípulos en una sola llamada.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RemoveEnrolledDisciplesRequestDto'}}}}
+      responses:
+        '200': {description: Discípulo(s) removido(s) exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/enrollments/disciples/{discipleId}/payment:
+    patch:
+      tags: [Retreats]
+      operationId: registerRetreatPayment
+      summary: Registrar pago de un asistente
+      description: >-
+        El monto se acumula sobre amountPaid. El estado pasa a PARTIAL si 0 < amountPaid < price y a PAID si
+        amountPaid >= price. El total pagado no puede superar el precio.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/DiscipleIdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterPaymentRequestDto'}}}}
+      responses:
+        '200': {description: Pago registrado exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatEnrollmentResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'El encuentro solicitado no existe | El discípulo no está inscrito en este encuentro', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '422': {description: El monto pagado supera el costo del encuentro, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/enrollments/disciples:
+    get:
+      tags: [Retreats]
+      operationId: findRetreatWithEnrolledDisciples
+      summary: Obtener encuentro junto con todos sus asistentes
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Encuentro y asistentes obtenidos exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatWithEnrollmentsResponseDto'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/staffs:
+    get:
+      tags: [Retreats]
+      operationId: findRetreatStaff
+      summary: Listar staff del encuentro
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {description: Staff obtenido exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatStaffList'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [Retreats]
+      operationId: addRetreatStaff
+      summary: Añadir discípulos como staff
+      description: '"Es todo o nada: si uno falla, no se añade ninguno."'
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetreatStaffRequestDto'}}}}
+      responses:
+        '201': {description: Discípulo(s) añadido(s) como staff exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseRetreatStaffList'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: 'El encuentro solicitado no existe | El discípulo solicitado no existe', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '409': {description: El discípulo ya está registrado como staff de este encuentro, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/staffs/remove:
+    post:
+      tags: [Retreats]
+      operationId: removeRetreatStaff
+      summary: Remover discípulos del staff
+      description: Se usa POST con body para poder quitar varios discípulos en una sola llamada.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RemoveStaffRequestDto'}}}}
+      responses:
+        '200': {description: Discípulo(s) removido(s) del staff exitosamente, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponseVoid'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/export/excel:
+    get:
+      tags: [Retreats]
+      operationId: exportRetreatFullReport
+      summary: Exportar reporte completo del encuentro
+      description: Archivo `Reporte_Encuentro_{id}.xlsx`. Hoja "Encuentro" con datos del encuentro, asistentes y staff.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/export/excel/attendees:
+    get:
+      tags: [Retreats]
+      operationId: exportRetreatAttendees
+      summary: Exportar asistentes del encuentro
+      description: '"Archivo `Asistentes_Encuentro_{id}.xlsx`, hoja "Asistentes". Columnas: N°, Nombres, Apellidos, Celular."'
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/export/excel/attendees-payments:
+    get:
+      tags: [Retreats]
+      operationId: exportRetreatAttendeesWithPayments
+      summary: Exportar asistentes con estado de pago
+      description: >-
+        Archivo `Asistentes_Pagos_Encuentro_{id}.xlsx`, hoja "Asistentes - Pagos". Columnas: N°, Nombres, Apellidos,
+        Celular, Estado de pago (Pagado, No pagado o "Falta S/ monto").
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+  /retreats/{id}/export/excel/staffs:
+    get:
+      tags: [Retreats]
+      operationId: exportRetreatStaff
+      summary: Exportar staff del encuentro
+      description: '"Archivo `Staff_Encuentro_{id}.xlsx`. Columnas: N°, Nombres, Apellidos, Celular."'
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200': {$ref: '#/components/responses/ExcelFile'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {description: El encuentro solicitado no existe, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorDto'}}}}
+        '500': {$ref: '#/components/responses/InternalError'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # -------------------------------------------------------------------------
+  # PARÁMETROS REUTILIZABLES
+  # -------------------------------------------------------------------------
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    DiscipleIdPath:
+      name: discipleId
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    Page:
+      name: page
+      in: query
+      description: Página, 1-indexed
+      schema: {type: integer, minimum: 1, default: 1}
+    Size:
+      name: size
+      in: query
+      description: Registros por página
+      schema: {type: integer, minimum: 1, default: 10}
+    SortField:
+      name: sortField
+      in: query
+      description: Campo por el que se ordena. Sin valor no se aplica orden
+      schema: {type: string}
+    InventorySortField:
+      name: sortField
+      in: query
+      description: Campo por el que se ordena
+      schema: {type: string, default: name}
+    SortDirection:
+      name: sortDirection
+      in: query
+      description: Dirección del orden
+      schema: {type: string, enum: [ASC, DESC], default: ASC}
+    DiscipleSearch:
+      name: search
+      in: query
+      description: >-
+        Búsqueda parcial por nombres o apellidos, sin distinguir mayúsculas ni tildes. Con dos palabras busca
+        nombre y apellido en cualquier orden. Si se envía, firstName y lastName se ignoran
+      schema: {type: string}
+    DiscipleFirstName:
+      name: firstName
+      in: query
+      description: Búsqueda parcial por nombres. Ignorado si se envía search
+      schema: {type: string}
+    DiscipleLastName:
+      name: lastName
+      in: query
+      description: Búsqueda parcial por apellidos. Ignorado si se envía search
+      schema: {type: string}
+    DiscipleGender:
+      name: gender
+      in: query
+      schema: {$ref: '#/components/schemas/GenderEnum'}
+    DiscipleSpiritualLevel:
+      name: spiritualLevel
+      in: query
+      schema: {$ref: '#/components/schemas/SpiritualLevel'}
+    DiscipleMaritalStatus:
+      name: maritalStatus
+      in: query
+      schema: {$ref: '#/components/schemas/MaritalStatus'}
+    CellGroupName:
+      name: name
+      in: query
+      description: Búsqueda parcial por nombre de la célula
+      schema: {type: string}
+    CellGroupLeaderName:
+      name: leaderName
+      in: query
+      description: Búsqueda parcial por nombre y apellido del líder
+      schema: {type: string}
+    CellGroupMeetingDay:
+      name: meetingDay
+      in: query
+      schema: {$ref: '#/components/schemas/MeetingDay'}
+    CellGroupIsPastorCell:
+      name: isPastorCell
+      in: query
+      description: true = solo células principales, false = solo células regulares
+      schema: {type: boolean}
+    InventoryName:
+      name: name
+      in: query
+      description: Búsqueda parcial por nombre del ítem
+      schema: {type: string}
+    InventoryCategory:
+      name: category
+      in: query
+      description: Búsqueda parcial por categoría
+      schema: {type: string}
+    InventorySourceType:
+      name: sourceType
+      in: query
+      schema: {$ref: '#/components/schemas/InventorySourceEnum'}
+    InventoryDonorName:
+      name: donorName
+      in: query
+      description: Búsqueda parcial por nombre y apellido del donante
+      schema: {type: string}
+    InventoryRegisteredFrom:
+      name: registeredFrom
+      in: query
+      description: Fecha de registro mínima (yyyy-MM-dd)
+      schema: {type: string, format: date}
+    InventoryRegisteredTo:
+      name: registeredTo
+      in: query
+      description: Fecha de registro máxima (yyyy-MM-dd)
+      schema: {type: string, format: date}
+
+  # -------------------------------------------------------------------------
+  # RESPUESTAS REUTILIZABLES
+  # -------------------------------------------------------------------------
+  responses:
+    BadRequest:
+      description: >-
+        Los datos enviados no son válidos. `reasons` trae un elemento por error con el formato "campo - mensaje"
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorDto'}
+    Unauthorized:
+      description: >-
+        Debes iniciar sesión primero. | La sesión no es válida, vuelve a iniciar sesión |
+        La sesión ha expirado, vuelve a iniciar sesión
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorDto'}
+    InternalError:
+      description: Ocurrió un error inesperado, inténtalo más tarde (o "Error al generar el archivo Excel")
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorDto'}
+    ExcelFile:
+      description: Archivo Excel (.xlsx)
+      headers:
+        Content-Disposition:
+          description: attachment; filename="<nombre>.xlsx"
+          schema: {type: string}
+      content:
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          schema: {type: string, format: binary}
+
+  schemas:
+    # -----------------------------------------------------------------------
+    # ENUMS
+    # -----------------------------------------------------------------------
+    GenderEnum:
+      type: string
+      enum: [MALE, FEMALE]
+    MaritalStatus:
+      type: string
+      enum: [SINGLE, MARRIED, DIVORCED, WIDOWED, COHABITING]
+    SpiritualLevel:
+      type: string
+      enum:
+        - GUEST
+        - PRE_RETREAT
+        - RETREAT
+        - POST_RETREAT
+        - LEADERSHIP_SCHOOL_1
+        - LEADERSHIP_SCHOOL_2
+        - LEADERSHIP_SCHOOL_3
+        - LEADERSHIP_SCHOOL_4
+        - LEADERSHIP_SCHOOL_5
+        - LEADERSHIP_SCHOOL_6
+        - LEADER
+    MeetingDay:
+      type: string
+      description: Jueves y domingo están reservados para los cultos
+      enum: [MONDAY, TUESDAY, WEDNESDAY, FRIDAY, SATURDAY]
+    RoleEnum:
+      type: string
+      enum: [PASTOR]
+    InventorySourceEnum:
+      type: string
+      description: DONATED = donado por un discípulo, PURCHASED = comprado por la iglesia
+      enum: [DONATED, PURCHASED]
+    StockAdjustmentTypeEnum:
+      type: string
+      description: INCREASE = ingreso, DECREASE = salida
+      enum: [INCREASE, DECREASE]
+    PaymentStatusEnum:
+      type: string
+      description: PENDING = sin pagos, PARTIAL = pago incompleto, PAID = pagado completo
+      enum: [PAID, PENDING, PARTIAL]
+
+    # -----------------------------------------------------------------------
+    # COMUNES
+    # -----------------------------------------------------------------------
+    ErrorDto:
+      type: object
+      properties:
+        message: {type: string, example: Los datos enviados no son válidos}
+        reasons:
+          type: array
+          items: {type: string}
+          example: ["firstName - Los nombres son obligatorios"]
+        timestamp: {type: string, format: date-time, example: "2026-11-11T15:30:00Z"}
+    ApiEnvelope:
+      type: object
+      properties:
+        status: {type: integer, example: 200}
+        message: {type: string}
+        success: {type: boolean, example: true}
+    ApiResponseVoid:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {type: object, nullable: true}
+    PageMeta:
+      type: object
+      properties:
+        pageSize: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+
+    # -----------------------------------------------------------------------
+    # AUTH
+    # -----------------------------------------------------------------------
+    AuthLoginRequestDto:
+      type: object
+      required: [usernameOrEmail, password]
+      properties:
+        usernameOrEmail: {type: string, minLength: 1, maxLength: 150, example: pastorwilly}
+        password: {type: string, minLength: 1, maxLength: 255, example: miContraseña123}
+    AuthUserRegisterRequestDto:
+      type: object
+      required: [firstName, lastName, gender, username, email, password]
+      properties:
+        firstName: {type: string, minLength: 1, maxLength: 150, example: Willy}
+        lastName: {type: string, minLength: 1, maxLength: 150, example: Juárez}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        username: {type: string, minLength: 3, maxLength: 50, example: pastorwilly}
+        email: {type: string, format: email, minLength: 3, maxLength: 150, example: pastorwilly@iglesia.com}
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,100}$'
+          description: Debe contener mayúscula, minúscula, número y un carácter especial entre @ $ ! % * ? &
+          example: miContraseña123!
+    AuthLoginResponseDto:
+      type: object
+      properties:
+        usernameOrEmail: {type: string, example: pastorwilly}
+        jwt: {type: string, example: eyJhbGciOiJIUzUxMiJ9...}
+    AuthUserRegisterResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        username: {type: string}
+        email: {type: string}
+        role: {$ref: '#/components/schemas/RoleEnum'}
+    AuthUserEntityProfileResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        username: {type: string}
+        email: {type: string}
+        role: {$ref: '#/components/schemas/RoleEnum'}
+    ApiResponseAuthLoginResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/AuthLoginResponseDto'}
+    ApiResponseAuthUserRegisterResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/AuthUserRegisterResponseDto'}
+    ApiResponseAuthUserEntityProfileResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/AuthUserEntityProfileResponseDto'}
+
+    # -----------------------------------------------------------------------
+    # DISCIPLES
+    # -----------------------------------------------------------------------
+    DiscipleChildRegisterRequestDto:
+      type: object
+      required: [firstName, lastName, gender]
+      properties:
+        firstName: {type: string, minLength: 1, maxLength: 150, example: Mateo}
+        lastName: {type: string, minLength: 1, maxLength: 150, example: Juárez}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, description: Debe ser anterior a hoy, example: "2020-03-15"}
+    DiscipleChildUpdateRequestDto:
+      type: object
+      description: Con `id` actualiza el hijo existente; sin `id` crea un hijo nuevo (firstName, lastName y gender son necesarios)
+      properties:
+        id: {type: integer, format: int64, nullable: true}
+        firstName: {type: string, maxLength: 150}
+        lastName: {type: string, maxLength: 150}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, description: Debe ser anterior a hoy}
+    DiscipleRegisterRequestDto:
+      type: object
+      description: >-
+        Reglas de negocio (responden 400): coupleName es obligatorio si maritalStatus = MARRIED;
+        isCellGroupLeader debe ser true si y solo si spiritualLevel = LEADER; isTeacher solo puede ser true si
+        spiritualLevel = LEADER. phoneCodeNumber y phoneNumber van juntos (ambos o ninguno), phoneNumber solo con
+        dígitos, con longitud y prefijo según el código de país (51 Perú, 58 Venezuela, 57 Colombia, 591 Bolivia,
+        593 Ecuador, 56 Chile, 34 España, 39 Italia, 46 Suecia, 7 Rusia); otros códigos admiten 6 a 15 dígitos.
+      required: [firstName, lastName, gender, maritalStatus, spiritualLevel]
+      properties:
+        firstName: {type: string, minLength: 3, maxLength: 150, example: Heinz}
+        lastName: {type: string, minLength: 3, maxLength: 150, example: Juárez}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, nullable: true, description: Debe ser anterior a hoy, example: "1994-07-27"}
+        occupation: {type: string, maxLength: 150, nullable: true, example: Economista}
+        phoneCodeNumber: {type: string, maxLength: 10, nullable: true, example: "51"}
+        phoneNumber: {type: string, nullable: true, example: "901112126"}
+        address: {type: string, maxLength: 255, nullable: true, example: Rusia}
+        dni: {type: string, maxLength: 20, nullable: true, description: Único entre discípulos activos, example: "70100033"}
+        maritalStatus: {$ref: '#/components/schemas/MaritalStatus'}
+        coupleName: {type: string, minLength: 3, maxLength: 150, nullable: true, example: María García}
+        spiritualLevel: {$ref: '#/components/schemas/SpiritualLevel'}
+        isCellGroupLeader: {type: boolean, default: false}
+        isTeacher: {type: boolean, nullable: true, default: false}
+        children:
+          type: array
+          nullable: true
+          items: {$ref: '#/components/schemas/DiscipleChildRegisterRequestDto'}
+        invitedByDiscipleId: {type: integer, format: int64, nullable: true, example: 3}
+    DiscipleUpdateRequestDto:
+      type: object
+      description: Todos los campos son opcionales; solo se actualiza lo que se envía. Aplican las mismas reglas de negocio que en el registro, sobre los valores resultantes.
+      properties:
+        firstName: {type: string, maxLength: 150}
+        lastName: {type: string, maxLength: 150}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, description: Debe ser anterior a hoy}
+        occupation: {type: string, maxLength: 150}
+        phoneCodeNumber: {type: string, maxLength: 10}
+        phoneNumber: {type: string}
+        address: {type: string, maxLength: 255}
+        dni: {type: string, maxLength: 20}
+        maritalStatus: {$ref: '#/components/schemas/MaritalStatus'}
+        coupleName: {type: string, maxLength: 150}
+        spiritualLevel: {$ref: '#/components/schemas/SpiritualLevel'}
+        isCellGroupLeader: {type: boolean}
+        isTeacher: {type: boolean}
+        children:
+          type: array
+          description: Si se envía es la lista final de hijos; los hijos existentes que no aparezcan se eliminan definitivamente
+          items: {$ref: '#/components/schemas/DiscipleChildUpdateRequestDto'}
+    BirthdayAlertDto:
+      type: object
+      description: Calculado con la zona horaria America/Lima. Semana de lunes a domingo
+      properties:
+        isToday: {type: boolean}
+        isTomorrow: {type: boolean}
+        wasYesterday: {type: boolean}
+        withinCurrentMonth: {type: boolean}
+        withinCurrentWeek: {type: boolean}
+        daysUntilNextBirthday: {type: integer, format: int64, example: 258}
+        nextBirthday: {type: string, format: date, example: "2027-07-27"}
+        dayOfWeek: {type: string, example: martes}
+    DiscipleChildResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, nullable: true}
+        age: {type: integer, nullable: true}
+    DiscipleInviterResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+    DiscipleParentResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+    DiscipleResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        birthDate: {type: string, format: date, nullable: true}
+        age: {type: integer, nullable: true}
+        occupation: {type: string, nullable: true}
+        phoneCodeNumber: {type: string, nullable: true}
+        phoneNumber: {type: string, nullable: true}
+        address: {type: string, nullable: true}
+        dni: {type: string, nullable: true}
+        maritalStatus: {$ref: '#/components/schemas/MaritalStatus'}
+        coupleName: {type: string, nullable: true}
+        spiritualLevel: {$ref: '#/components/schemas/SpiritualLevel'}
+        isCellGroupLeader: {type: boolean}
+        isTeacher: {type: boolean}
+        isCellGroupMember: {type: boolean}
+        hasChildren: {type: boolean}
+        children:
+          type: array
+          items: {$ref: '#/components/schemas/DiscipleChildResponseDto'}
+        birthdayAlert:
+          allOf:
+            - $ref: '#/components/schemas/BirthdayAlertDto'
+          nullable: true
+        invitedBy:
+          allOf:
+            - $ref: '#/components/schemas/DiscipleInviterResponseDto'
+          nullable: true
+        parents:
+          type: array
+          items: {$ref: '#/components/schemas/DiscipleParentResponseDto'}
+    DisciplePage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: {$ref: '#/components/schemas/DiscipleResponseDto'}
+    ApiResponseDiscipleResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/DiscipleResponseDto'}
+    ApiResponseDisciplePage:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/DisciplePage'}
+
+    # -----------------------------------------------------------------------
+    # CELL GROUPS
+    # -----------------------------------------------------------------------
+    CellGroupRegisterRequestDto:
+      type: object
+      description: >-
+        Célula regular (isPastorCell = false): leaderDiscipleId obligatorio y el líder debe tener nivel LEADER.
+        Célula principal (isPastorCell = true): pastorCellGender obligatorio y sin líder.
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 150, description: Único, example: Los Bendecidos}
+        leaderDiscipleId: {type: integer, format: int64, nullable: true, example: 3}
+        meetingDay:
+          allOf:
+            - $ref: '#/components/schemas/MeetingDay'
+          nullable: true
+        meetingTime: {type: string, nullable: true, description: 'Hora de reunión, formato HH:mm', example: "19:00"}
+        location: {type: string, maxLength: 255, nullable: true, example: Av. Siempre Viva 123}
+        isPastorCell: {type: boolean, default: false}
+        pastorCellGender:
+          allOf:
+            - $ref: '#/components/schemas/GenderEnum'
+          nullable: true
+    CellGroupUpdateRequestDto:
+      type: object
+      description: Todos los campos son opcionales. pastorCellGender no se puede modificar.
+      properties:
+        name: {type: string, maxLength: 150}
+        leaderDiscipleId: {type: integer, format: int64}
+        meetingDay: {$ref: '#/components/schemas/MeetingDay'}
+        meetingTime: {type: string, description: 'Formato HH:mm', example: "20:00"}
+        location: {type: string, maxLength: 255}
+        isPastorCell: {type: boolean}
+    CellGroupMemberRequestDto:
+      type: object
+      required: [discipleId]
+      properties:
+        discipleId: {type: integer, format: int64, example: 5}
+    CellGroupLeaderResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+    CellGroupResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        name: {type: string}
+        leader:
+          allOf:
+            - $ref: '#/components/schemas/CellGroupLeaderResponseDto'
+          nullable: true
+        meetingDay:
+          allOf:
+            - $ref: '#/components/schemas/MeetingDay'
+          nullable: true
+        meetingDaySpanishName: {type: string, nullable: true, example: Lunes}
+        meetingTime: {type: string, nullable: true, description: Formato ISO (HH:mm:ss), example: "19:00:00"}
+        location: {type: string, nullable: true}
+        isPastorCell: {type: boolean}
+        pastorCellGender:
+          allOf:
+            - $ref: '#/components/schemas/GenderEnum'
+          nullable: true
+        memberCount: {type: integer}
+    CellGroupMemberResponseDto:
+      type: object
+      properties:
+        memberId: {type: integer, format: int64}
+        discipleId: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        phoneCodeNumber: {type: string, nullable: true}
+        phoneNumber: {type: string, nullable: true}
+        spiritualLevel: {$ref: '#/components/schemas/SpiritualLevel'}
+        birthDate: {type: string, format: date, nullable: true}
+        age: {type: integer, nullable: true}
+        gender: {$ref: '#/components/schemas/GenderEnum'}
+        isCellGroupLeader: {type: boolean}
+        isCoreTwelve: {type: boolean}
+        isPastorCoreTwelve: {type: boolean}
+        birthdayAlert:
+          allOf:
+            - $ref: '#/components/schemas/BirthdayAlertDto'
+          nullable: true
+    CellGroupPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: {$ref: '#/components/schemas/CellGroupResponseDto'}
+    ApiResponseCellGroupResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/CellGroupResponseDto'}
+    ApiResponseCellGroupPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/CellGroupPage'}
+    ApiResponseCellGroupMemberResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/CellGroupMemberResponseDto'}
+    ApiResponseCellGroupMemberList:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {$ref: '#/components/schemas/CellGroupMemberResponseDto'}
+
+    # -----------------------------------------------------------------------
+    # INVENTORY
+    # -----------------------------------------------------------------------
+    InventoryItemRegisterRequestDto:
+      type: object
+      required: [name, quantity, category, sourceType]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 150, example: Silla plegable}
+        description: {type: string, nullable: true}
+        cost: {type: number, format: double, minimum: 0, nullable: true, description: Hasta 8 enteros y 2 decimales. Costo de compra, example: 25.50}
+        quantity: {type: integer, minimum: 0, example: 150}
+        category: {type: string, minLength: 1, maxLength: 100, description: Texto libre, example: Salón principal}
+        sourceType: {$ref: '#/components/schemas/InventorySourceEnum'}
+        donorDiscipleId: {type: integer, format: int64, nullable: true, description: Obligatorio cuando sourceType = DONATED}
+        registeredAt: {type: string, format: date, nullable: true, description: No puede ser futura. Por defecto, la fecha actual}
+    InventoryItemUpdateRequestDto:
+      type: object
+      description: Todos los campos son opcionales. La cantidad se modifica con el endpoint de stock.
+      properties:
+        name: {type: string, maxLength: 150}
+        description: {type: string}
+        cost: {type: number, format: double, minimum: 0}
+        category: {type: string, maxLength: 100}
+        sourceType: {$ref: '#/components/schemas/InventorySourceEnum'}
+        donorDiscipleId: {type: integer, format: int64}
+        registeredAt: {type: string, format: date, description: No puede ser futura}
+    InventoryItemStockAdjustmentRequestDto:
+      type: object
+      required: [type, quantity]
+      properties:
+        type: {$ref: '#/components/schemas/StockAdjustmentTypeEnum'}
+        quantity: {type: integer, minimum: 1, example: 10}
+    InventoryItemDonorResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+    InventoryItemResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        name: {type: string}
+        description: {type: string, nullable: true}
+        cost: {type: number, format: double, nullable: true}
+        quantity: {type: integer}
+        category: {type: string}
+        sourceType: {$ref: '#/components/schemas/InventorySourceEnum'}
+        donor:
+          allOf:
+            - $ref: '#/components/schemas/InventoryItemDonorResponseDto'
+          nullable: true
+        registeredAt: {type: string, format: date}
+    InventoryItemPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: {$ref: '#/components/schemas/InventoryItemResponseDto'}
+    ApiResponseInventoryItemResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/InventoryItemResponseDto'}
+    ApiResponseInventoryItemPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/InventoryItemPage'}
+
+    # -----------------------------------------------------------------------
+    # RETREATS
+    # -----------------------------------------------------------------------
+    RetreatRegisterRequestDto:
+      type: object
+      description: endDate debe ser posterior a startDate (400 con reason "endDate - ...")
+      required: [name, location, startDate, endDate]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 150, example: Encuentro Noviembre 2026}
+        location: {type: string, minLength: 1, maxLength: 255, example: Casa de retiro Cieneguilla}
+        price: {type: number, format: double, minimum: 0, nullable: true, description: Costo de inscripción para todos los asistentes, example: 120.00}
+        startDate: {type: string, format: date-time, description: Inicio, ISO-8601 UTC, example: "2026-12-05T01:00:00Z"}
+        endDate: {type: string, format: date-time, description: Fin, ISO-8601 UTC, example: "2026-12-06T23:00:00Z"}
+    RetreatUpdateRequestDto:
+      type: object
+      description: Todos los campos son opcionales. Si se envía startDate o endDate, el rango final debe ser válido y las fechas futuras.
+      properties:
+        name: {type: string, maxLength: 150}
+        location: {type: string, maxLength: 255}
+        price: {type: number, format: double, minimum: 0}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+    RetreatEnrollmentRequestDto:
+      type: object
+      required: [discipleIds]
+      properties:
+        discipleIds:
+          type: array
+          minItems: 1
+          items: {type: integer, format: int64}
+    RemoveEnrolledDisciplesRequestDto:
+      type: object
+      required: [discipleIds]
+      properties:
+        discipleIds:
+          type: array
+          minItems: 1
+          items: {type: integer, format: int64}
+    RetreatStaffRequestDto:
+      type: object
+      required: [discipleIds]
+      properties:
+        discipleIds:
+          type: array
+          minItems: 1
+          items: {type: integer, format: int64}
+    RemoveStaffRequestDto:
+      type: object
+      required: [discipleIds]
+      properties:
+        discipleIds:
+          type: array
+          minItems: 1
+          items: {type: integer, format: int64}
+    RegisterPaymentRequestDto:
+      type: object
+      required: [amount]
+      properties:
+        amount: {type: number, format: double, minimum: 0.01, description: Monto a sumar al total pagado, example: 50.00}
+    RetreatResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        name: {type: string}
+        location: {type: string}
+        price: {type: number, format: double}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+        enrolledCount: {type: integer}
+        staffCount: {type: integer}
+    RetreatEnrollmentResponseDto:
+      type: object
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        discipleId: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        phoneCodeNumber: {type: string, nullable: true}
+        phoneNumber: {type: string, nullable: true}
+        paymentStatus: {$ref: '#/components/schemas/PaymentStatusEnum'}
+        amountPaid: {type: number, format: double}
+        amountPending: {type: number, format: double, description: price del encuentro menos amountPaid}
+    RetreatStaffResponseDto:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        discipleId: {type: integer, format: int64}
+        firstName: {type: string}
+        lastName: {type: string}
+        phoneCodeNumber: {type: string, nullable: true}
+        phoneNumber: {type: string, nullable: true}
+    RetreatWithEnrollmentsResponseDto:
+      type: object
+      properties:
+        retreat: {$ref: '#/components/schemas/RetreatResponseDto'}
+        enrollments:
+          type: array
+          items: {$ref: '#/components/schemas/RetreatEnrollmentResponseDto'}
+    RetreatPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: {$ref: '#/components/schemas/RetreatResponseDto'}
+    ApiResponseRetreatResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/RetreatResponseDto'}
+    ApiResponseRetreatPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/RetreatPage'}
+    ApiResponseRetreatEnrollmentResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/RetreatEnrollmentResponseDto'}
+    ApiResponseRetreatEnrollmentList:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {$ref: '#/components/schemas/RetreatEnrollmentResponseDto'}
+    ApiResponseRetreatStaffList:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {$ref: '#/components/schemas/RetreatStaffResponseDto'}
+    ApiResponseRetreatWithEnrollmentsResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/RetreatWithEnrollmentsResponseDto'}
