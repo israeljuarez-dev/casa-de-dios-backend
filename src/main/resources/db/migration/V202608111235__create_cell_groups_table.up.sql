@@ -10,9 +10,9 @@ CREATE TABLE cell_groups (
                              meeting_time        TIME,
                              location            VARCHAR(255),
                              is_pastor_cell      BOOLEAN NOT NULL DEFAULT FALSE,
-                             pastor_cell_gender   VARCHAR(10),
-                             created_at          TIMESTAMP NOT NULL DEFAULT now(),
-                             updated_at          TIMESTAMP NOT NULL DEFAULT now(),
+                             pastor_cell_gender  VARCHAR(10),
+                             created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+                             updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
 
 
                              CONSTRAINT pk_cell_groups PRIMARY KEY (id),
